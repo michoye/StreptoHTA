@@ -1,0 +1,87 @@
+---
+title: "StreptoHTA Group 4 Assignment"
+output: html_document
+---
+
+# Is Throat Culture More Cost-Effective than Rapid Antigen Diagnostic Testing (RADT) for Treating Group A Streptococcus (GAS) in Pedriatric Sore Throat Patients?
+
+# Background and Objectives
+
+## Study Question
+
+The study evaluates whether **Throat Culture** is more cost-effective than **Rapid Antigen Diagnostic Testing (RADT)** for diagnosing and treating **Group A Streptococcus (GAS)** in pediatric sore throat patients.
+
+### Relevance
+
+-   Throat infections are often viral, yet **antibiotics are frequently overprescribed**, contributing to antibiotic resistance.
+-   Overuse of antibiotics presents **unnecessary health risks**.
+-   **Optimizing decision-making** can improve patient outcomes and reduce healthcare costs.
+-   The study's insights will support **healthcare policymakers and clinicians** in identifying the most **economically and clinically efficient** diagnostic and treatment strategies.
+
+# Existing Decision Models
+
+Several existing models evaluate diagnostic strategies using **rapid strep tests** and analyze the **cost-effectiveness of treatment options**. Examples include:
+
+-   **Sensitivity/specificity models** for **GAS testing**
+-   **Cost-effectiveness studies** on delaying antibiotics for **watchful waiting**
+-   Example: ["Management of Sore Throats in Children – A Cost-effectiveness Analysis"](https://jamanetwork.com/journals/jamapediatrics/fullarticle/347278)
+
+# Study Population
+
+### Base Case Population:
+
+-   **Children aged 5-15 years** presenting with throat infections.
+-   Higher risk groups for **bacterial infections**.
+
+### Socioeconomic and Clinical Characteristics:
+
+-   **Socioeconomic variations** in access to **rapid diagnostic testing**.
+-   **Common symptoms** include:
+    -   Sore throat
+    -   Fever
+    -   Swollen lymph nodes
+    -   Tonsillar exudate
+
+# Setting and Location
+
+The study applies to:
+
+-   **Primary care clinics (General Practitioners)**
+-   **Emergency departments**
+-   **Regions with and without access to rapid strep tests**
+-   **Settings relying on clinical diagnosis**
+
+# Study Perspective
+
+The decision model is based on the **healthcare payer perspective**, focusing on **direct medical costs**:
+
+### Diagnostic Costs:
+
+-   **Rapid Antigen Diagnostic Test (RADT)**
+-   **Throat Culture (Lab processing, personnel time)**
+
+### Treatment Costs:
+
+-   **Antibiotics (Penicillin, other first-line treatments for GAS)**
+-   **Costs related to unnecessary antibiotic prescriptions for false positives**
+
+# Comparators
+
+The study compares:
+
+-   **Throat Culture** vs. **RADT** for diagnosing GAS in **primary care**.
+-   If **test-positive**, antibiotics are **immediately prescribed**.
+
+# Remaining Sections for Future Consideration
+
+These aspects will be addressed in later stages of the study:
+
+-   **Model type and structure**
+-   **Health states and pathways**
+-   **Time horizon for cost and outcome evaluation**
+-   **Discount rates**
+-   **Health outcome measures (e.g., QALYs, LYs)**
+-   **Effectiveness data sources**
+-   **Uncertainty characterization**
+-   **Key assumptions**
+-   **Stakeholder involvement**
