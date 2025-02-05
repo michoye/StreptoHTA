@@ -132,8 +132,8 @@ dist_Age <- read.csv("data/MyPopulation-AgeDistribution.csv")
 
 # Annual probabilities of becoming sick
 # We created a new matrix
-# df_p_sick <- data.frame(Age = 1:107)
-# df_p_sick$p_sick <- ifelse(df_p_sick$Age <= 18, 0.4, 0.1)
+df_p_sick <- data.frame(Age = 1:107)
+df_p_sick$p_HS <- ifelse(df_p_sick$Age <= 18, 0.4, 0.1)
 
 # probability to die in S by cycle (is increasing)
 v_p_SD    <- c(0.0149, 0.018, 0.021, 0.026, 0.031, rep(0.037, n_cycles - 5)) 
@@ -237,7 +237,6 @@ ggsave("figs/histogram_age.png", plot = p, width = 8, height = 6, dpi = 300)
 The `Probs` function updates the transition probabilities of every cycle. Important: (1) The probability from Healthy (H) to Sick (S) (`p_HS`) depends on the age. (2) The probability to die when you are healthy also depends on age (3) The probability from Sick to dead (`p_S1D`) depends on the number of cycles you have been in sick (`n_cycles_s`)
 
 ```{r}
-# Your turn
 Probs <- function(M_t, df_X, Diag = "SoC") { 
   # Arguments:
     # M_t:  health state occupied at cycle t (character variable)
@@ -263,8 +262,8 @@ Probs <- function(M_t, df_X, Diag = "SoC") {
   p_HD     <- p_HD_all[M_t == "H", "p_HD"]
   
   # lookup baseline probability and rate of becoming sick based on individual characteristics (Age)  
-  # p_HS_all <- inner_join(x = df_X, y = df_p_sick, by = c("Age"))
-  # p_HS     <- p_HS_all[M_t == "H", "p_HS"]
+  p_HS_all <- inner_join(x = df_X, y = df_p_sick, by = c("Age"))
+  p_HS     <- p_HS_all[M_t == "H", "p_HS"]
  
   # update m_p_t with the appropriate probabilities 
   # (all non-death probabilities are conditional on survival)
@@ -294,7 +293,6 @@ Probs <- function(M_t, df_X, Diag = "SoC") {
 The `Costs` function estimates the costs at every cycle.
 
 ```{r}
-# Your turn
 Costs <- function (M_t, Diag = "SoC") {
   # Arguments:
     # M_t: health state occupied at cycle t (character variable)
@@ -429,7 +427,6 @@ MicroSim <- function(n_i, df_X, Diag = "SoC", seed = 1, cycle_length = 1, verbos
 # 06 Run Microsimulation
 
 ```{r, eval = TRUE, echo = TRUE, warning = FALSE, message = FALSE, results = FALSE }
-# Your turn
 outcomes_SoC  <- MicroSim(n_i = n_i, df_X = df_X, seed = 1, cycle_length = cycle_length, Diag = "SoC")  # Run for Standard of Care
 outcomes_diagAB <- MicroSim(n_i = n_i, df_X = df_X, seed = 1, cycle_length = cycle_length, Diag = "AB") # Run simulation for strategy AB
 ```
