@@ -132,7 +132,7 @@ dist_Age <- read.csv("data/MyPopulation-AgeDistribution.csv")
 
 # Annual probabilities of becoming sick
 # We created a new matrix
-# df_p_sick <- data.frame(Age = 5:55)
+# df_p_sick <- data.frame(Age = 1:107)
 # df_p_sick$p_sick <- ifelse(df_p_sick$Age <= 18, 0.4, 0.1)
 
 # probability to die in S by cycle (is increasing)
@@ -262,7 +262,7 @@ Probs <- function(M_t, df_X, Diag = "SoC") {
   p_HD_all <- inner_join(x = df_X, y = p_mort, by = c("Age"))
   p_HD     <- p_HD_all[M_t == "H", "p_HD"]
   
-      # lookup baseline probability and rate of becoming sick based on individual characteristics (Age)  
+  # lookup baseline probability and rate of becoming sick based on individual characteristics (Age)  
   # p_HS_all <- inner_join(x = df_X, y = df_p_sick, by = c("Age"))
   # p_HS     <- p_HS_all[M_t == "H", "p_HS"]
  
