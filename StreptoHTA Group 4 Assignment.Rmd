@@ -3,17 +3,17 @@ title: "StreptoHTA Group 4 Assignment"
 output: html_document
 ---
 
-# Is Throat Culture More Cost-Effective than Rapid Antigen Diagnostic Testing (RADT) for Treating Group A Streptococcus (GAS) in Pedriatric Sore Throat Patients?
+# Is Throat Culture More Cost-Effective than Rapid Antigen Diagnostic Testing (RADT) for Diagnosisng Group A Streptococcus (GAS) in Pedriatric Sore Throat Patients?
 
 # Background and Objectives
 
 ## Study Question
 
-The study evaluates whether **Throat Culture** is more cost-effective than **Rapid Antigen Diagnostic Testing (RADT)** for diagnosing and treating **Group A Streptococcus (GAS)** in pediatric sore throat patients.
+The study evaluates whether **Throat Culture** is more cost-effective than **Rapid Antigen Diagnostic Testing (RADT)** for diagnosing **Group A Streptococcus (GAS)** in pediatric sore throat patients.
 
 ### Relevance
 
--   Throat infections are often viral, yet **antibiotics are frequently overprescribed**, contributing to antibiotic resistance.
+-   Throat infections are often viral, yet **antibiotics are frequently over-prescribed**, contributing to antibiotic resistance.
 -   Overuse of antibiotics presents **unnecessary health risks**.
 -   **Optimizing decision-making** can improve patient outcomes and reduce healthcare costs.
 -   The study's insights will support **healthcare policymakers and clinicians** in identifying the most **economically and clinically efficient** diagnostic and treatment strategies.
