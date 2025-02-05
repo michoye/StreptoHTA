@@ -20,7 +20,9 @@ The study evaluates whether **Throat Culture** is more cost-effective than **Rap
 
 # Existing Decision Models
 
-Several existing models evaluate diagnostic strategies using **rapid strep tests** and analyze the **cost-effectiveness of treatment options**. Examples include:
+Several existing models evaluate diagnostic strategies using **rapid strep tests** and analyze the **cost-effectiveness of treatment options**.
+
+Examples include:
 
 -   **Sensitivity/specificity models** for **GAS testing**
 -   **Cost-effectiveness studies** on delaying antibiotics for **watchful waiting**
