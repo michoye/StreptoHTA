@@ -3,87 +3,495 @@ title: "StreptoHTA Group 4 Assignment"
 output: html_document
 ---
 
+For this work we made use of the template developed by the Decision Analysis in R for Technologies in Health (DARTH) workgroup: <http://darthworkgroup.com>.
+
+The notation of our code is based on the following provided framework and coding convention: Alarid-Escudero, F., Krijkamp, E., Pechlivanoglou, P. et al. A Need for Change! A Coding Framework for Improving Transparency in Decision Modeling. PharmacoEconomics 37, 1329–1339 (2019). <https://doi.org/10.1007/s40273-019-00837-x>.
+
+Other work from DARTH can be found on the website: <http://darthworkgroup.com/publications/>
+
 # Is Throat Culture More Cost-Effective than Rapid Antigen Diagnostic Testing (RADT) for Diagnosisng Group A Streptococcus (GAS) in Pedriatric Sore Throat Patients?
 
-# Background and Objectives
+In this exercise, we will model Group A Streptococcal (GAS) pharyngitis using an individual-based state-transition model, commonly referred to as a microsimulation model. This model will simulate the progression of patients experiencing sore throat symptoms, incorporating two diagnostic strategies: Rapid Antigen Detection Test (RADT) and Throat Culture (TC).
 
-## Study Question
+**Table 1: Input parameters for the time dependent Sick-Sicker Microsimulation**
 
-The study evaluates whether **Throat Culture** is more cost-effective than **Rapid Antigen Diagnostic Testing (RADT)** for diagnosing **Group A Streptococcus (GAS)** in pediatric sore throat patients.
+| **Parameter** | **R name** | **Value** |
+|:---------------------------------|:------------------|:-----------------:|
+| Time horizon | `n_cycles` | 30 years |
+| Cycle length | `cycle_length` | 1 year |
+| Names of simulated individuals | `n_i` | 100000 |
+| Names of health states | `v_names_states` | H, S, D |
+| Annual discount rate (costs/QALYs) | `d_e` `d_c` | 3% |
+| Population characteristics |  |  |
+| \- Age distribution | -- | Range:5-55 distributed as in `MyPopulation-AgeDistribution.csv` |
+| Annual transition probabilities conditional on survival |  |  |
+| \- Disease onset (H to S) | `p_HS` | 0.25 |
+| \- Recovery (S to H) | `p_SH` | 0.12 |
+| Annual mortality |  |  |
+| \- All-cause mortality (H to D) | `p_HD` | Human Mortality Database (`mortProb_age.csv`): age dependent from 2015 |
+| \- Probability of death is S (S to D) | `p_SD` | dependent on state-residency |
+| Annual costs |  |  |
+| \- Healthy individuals | `c_H` | \$2,000 |
+| \- Sick individuals in S | `c_S` | \$4,000 |
+| \- Dead individuals | `c_D` | \$0 |
+| \- Additional cost of diagnosis for sick individuals (Throat Culture vs. RADT) | `c_diagAB` | \$1,000 |
+| Utility weights |  |  |
+| \- Healthy individuals | `u_H` | 1.00 |
+| \- Sick individuals in S | `u_S` | 0.75 |
+| \- Dead individuals | `u_D` | 0.00 |
+| Intervention effect |  |  |
+| \- Utility for treated individuals in S | `u_diagAB` | 0.8 |
+| Time varying extension of Sick-Sicker model |  |  |
+| \- Treatment effect modifier at baseline | `v_x` | Uniform(0.95, 1.05) |
 
-### Relevance
+# 01 Load packages
 
--   Throat infections are often viral, yet **antibiotics are frequently over-prescribed**, contributing to antibiotic resistance.
--   Overuse of antibiotics presents **unnecessary health risks**.
--   **Optimizing decision-making** can improve patient outcomes and reduce healthcare costs.
--   The study's insights will support **healthcare policymakers and clinicians** in identifying the most **economically and clinically efficient** diagnostic and treatment strategies.
+```{r, warning = F, message = F}
+if (!require('pacman')) install.packages('pacman')
 
-# Existing Decision Models
+library(pacman) # use this package to conveniently install other packages
+# load (install if required) packages from CRAN
+p_load("dplyr", "tidyr", "reshape2", "devtools", "scales", "ellipse", "ggplot2", "ggrepel", "gridExtra", "lazyeval", "igraph", "truncnorm", "ggraph", "reshape2", "patchwork", "knitr", "stringr", "diagram")                                       
+library(dampack)
+# load (install if required) packages from GitHub
+# install_github("DARTH-git/darthtools", force = TRUE) #Uncomment if there is a newer version
 
-Several existing models evaluate diagnostic strategies using **rapid strep tests** and analyze the **cost-effectiveness of treatment options**.
+p_load_gh("DARTH-git/darthtools")
+```
 
-Examples include:
+# 02 Load functions
 
--   **Sensitivity/specificity models** for **GAS testing**
--   **Cost-effectiveness studies** on delaying antibiotics for **watchful waiting**
--   Example: ["Management of Sore Throats in Children – A Cost-effectiveness Analysis"](https://jamanetwork.com/journals/jamapediatrics/fullarticle/347278)
+```{r}
+# all needed functions are in the darthtools package
+```
 
-# Study Population
+# 03 Model input
 
-### Base Case Population:
+We load all the model input parameters as described in Table 1.
 
--   **Children aged 5-15 years** presenting with throat infections.
--   Higher risk groups for **bacterial infections**.
+| **Test** | **Sensitivity** | **Specificity** |
+|:---------|:----------------|:---------------:|
+| RADT     | 0.9             |      0.78       |
+| TC       | 0.94            |      0.97       |
 
-### Socioeconomic and Clinical Characteristics:
+We calculated the recovery rate the following way:
 
--   **Socioeconomic variations** in access to **rapid diagnostic testing**.
--   **Common symptoms** include:
-    -   Sore throat
-    -   Fever
-    -   Swollen lymph nodes
-    -   Tonsillar exudate
+P(Recovery)=P(TP)+P(FN)+P(TN)+P(FP),
 
-# Setting and Location
+P(D) represents the prevalence of GAS pharyngitis, set to 0.1 for adults and 0.4 for children.
 
-The study applies to:
+Since some patients die before recovering, we introduced a mortality risk for the sick state. Given that GAS pharyngitis has a very low fatality rate, a realistic survival probability would be nearly 1 over 30 years. However, for the purposes of this assignment, we artificially lowered the recovery rate to create a meaningful comparison.
 
--   **Primary care clinics (General Practitioners)**
--   **Emergency departments**
--   **Regions with and without access to rapid strep tests**
--   **Settings relying on clinical diagnosis**
+For modeling purposes, we set a **fixed recovery rate of 0.12**, overriding the more realistic estimates.
 
-# Study Perspective
+Prevalence
 
-The decision model is based on the **healthcare payer perspective**, focusing on **direct medical costs**:
+```{r}
+## General setup 
+set.seed(1)               # set the seed  
+cycle_length   <- 1       # cycle length equal to one year (use 1/12 for monthly)
+n_cycles       <- 30      # time horizon, number of cycles
+n_i            <- 100000  # number of individuals
 
-### Diagnostic Costs:
+# the 4 health states of the model:
+v_names_states  <- c("H",  # Healthy (H)
+                     "S", # Sick (S)
+                     "D")  # Dead (D)
+v_names_cycles  <- paste("cycle", 0:n_cycles)    # cycle names
+n_states        <- length(v_names_states) # number of health states               
 
--   **Rapid Antigen Diagnostic Test (RADT)**
--   **Throat Culture (Lab processing, personnel time)**
+### Discounting factors 
+d_c <- 0.03 # annual discount rate for costs 
+d_e <- 0.03 # annual discount rate for QALYs
 
-### Treatment Costs:
 
--   **Antibiotics (Penicillin, other first-line treatments for GAS)**
--   **Costs related to unnecessary antibiotic prescriptions for false positives**
+### Strategies 
+v_names_str   <- c("Standard of care",   # This is the RADT
+                   "Strategy AB")        # Throat Culture
+n_str         <- length(v_names_str)     # number of strategies
 
-# Comparators
+### Transition probabilities 
+# (all non-probabilities are conditional on survival)
 
-The study compares:
+# if (df_X[, dist_Age$age] > 18) {
+#  p_HS <- 0.1
+# } else {
+#  p_HS <- 0.4
+# }
 
--   **Throat Culture** vs. **RADT** for diagnosing GAS in **primary care**.
--   If **test-positive**, antibiotics are **immediately prescribed**.
+p_HS         <- 0.25     # probability of becoming sick when healthy
+p_SH_SoC         <- 0.12      # probability of recovering to healthy when sick and diagnosed through SoC
+p_SH_diagAB          <- 0.18  # probability of recovering to healthy when sick and diagnosed through AB
 
-# Remaining Sections for Future Consideration
 
-These aspects will be addressed in later stages of the study:
+# Annual probabilities of death
+# load age dependent probability
+p_mort   <- read.csv("data-raw/mortProb_age.csv")
+# load age distribution
+dist_Age <- read.csv("data-raw/MyPopulation-AgeDistribution.csv") 
 
--   **Model type and structure**
--   **Health states and pathways**
--   **Time horizon for cost and outcome evaluation**
--   **Discount rates**
--   **Health outcome measures (e.g., QALYs, LYs)**
--   **Effectiveness data sources**
--   **Uncertainty characterization**
--   **Key assumptions**
--   **Stakeholder involvement**
+# Annual probabilities of becoming sick
+# We created a new matrix
+# df_p_sick <- data.frame(Age = 5:55)
+# df_p_sick$p_sick <- ifelse(df_p_sick$Age <= 18, 0.4, 0.1)
+
+# probability to die in S by cycle (is increasing)
+v_p_SD    <- c(0.0149, 0.018, 0.021, 0.026, 0.031, rep(0.037, n_cycles - 5)) 
+
+### State rewards 
+#### Costs 
+c_H     <- 2000  # annual cost of being Healthy
+c_S     <- 4000  # annual cost of being Sick
+c_D     <- 0     # annual cost of being dead
+c_diagSoC <- 1000 # annual (very inflated) cost (for this assignment) of receiving diagnosis SoC + treatment when in Sick
+c_diagAB <- 2000 # annual (very inflated) cost (for this assignment) of receiving diagnosis AB + treatment when in Sick
+
+#### Utilities 
+u_H     <- 1     # annual utility of being Healthy
+u_S     <- 0.75  # annual utility of being Sick
+u_D     <- 0     # annual utility of being dead
+u_diagAB <- 0.8  # annual utility when receiving diagnosis AB when in Sick
+```
+
+```{r}
+m_P_diag <- matrix(0, nrow = n_states, ncol = n_states, dimnames = list(v_names_states, v_names_states))
+m_P_diag["H", "H" ] = ""
+m_P_diag["H", "S" ] = ""
+m_P_diag["H", "D" ] = ""
+
+m_P_diag["S", "H"] = ""
+m_P_diag["S", "S" ] = ""
+m_P_diag["S", "D" ] = ""
+
+m_P_diag["D", "D" ] = ""
+
+layout.fig <- c(2, 1)
+plotmat(t(m_P_diag), t(layout.fig), self.cex = 0.5, curve = 0.04, arr.pos = 0.7,
+        latex = T, arr.type = "curved", relsize = 0.85, box.prop = 0.8,
+        cex = 0.8, box.cex = 0.7, lwd = 1)
+```
+
+## Calculate internal model parameters
+
+```{r}
+### Discount weight for costs and effects 
+v_dwc   <- 1 / ((1 + (d_c * cycle_length)) ^ (0:n_cycles))
+v_dwe   <- 1 / ((1 + (d_e * cycle_length)) ^ (0:n_cycles))
+
+# Within-cycle correction (WCC) - method  options Simpson's 1/3 rule, "half-cycle" or "none" 
+v_wcc    <- darthtools::gen_wcc(n_cycles = n_cycles, 
+                                method = "Simpson1/3") # vector of wcc
+```
+
+# 04 Sample individual level characteristics
+
+## 04.1 Static characteristics
+
+```{r}
+# sample the treatment effect modifier at baseline
+v_x     <- runif(n_i, min = 0.95, max = 1.05) 
+# sample from the age distribution the initial age for every individual
+v_age0  <- sample(x = dist_Age$age, prob = dist_Age$prop, size = n_i, replace = TRUE) 
+
+# See also:
+ggplot(df_X, aes(x  = Age)) +
+    geom_histogram()
+```
+
+## 04.2 Dynamic characteristics
+
+Here, we specify the information regarding the initial health states of the individuals as well as in which health state each of the individuals start.
+
+```{r}
+v_M_init  <- rep("H", times = n_i)   # Specify the initial health state of the individuals 
+v_n_cycles_s_init <- rep(0, n_i)  # everyone begins in the healthy state (in this example)
+```
+
+## 04.3 Create a dataframe with the individual characteristics
+
+Now, we merge the static and dynamic individual characteristics into one dataframe.
+
+We created 100000 patients between the age of 5-55 years of age who al start off healthy, with no history of being sick.
+
+```{r}
+# data frame with each individual's 
+# ID number, treatment effect modifier, age and initial time in sick state and initial health state at the start of the simulation
+df_X  <- data.frame(ID = 1:n_i, M_x = v_x, Age = v_age0, n_cycles = v_n_cycles_s_init, M_init = v_M_init)
+
+head(df_X)  # print the first rows of the dataframe
+```
+
+# 05 Define Simulation Functions
+
+## 05.1 Probability function
+
+The `Probs` function updates the transition probabilities of every cycle. Important: (1) The probability from Healthy (H) to Sick (S) (`p_HS`) depends on the age. (2) The probability to die when you are healthy also depends on age (3) The probability from Sick to dead (`p_S1D`) depends on the number of cycles you have been in sick (`n_cycles_s`)
+
+```{r}
+# Your turn
+Probs <- function(M_t, df_X, Diag = "SoC") { 
+  # Arguments:
+    # M_t:  health state occupied at cycle t (character variable)
+    # df_X: data frame with individual characteristics data 
+    # Diag:  diagnosis
+  # Returns: 
+    # transition probabilities for that cycle
+
+# Diagnosis specific transition probabilities
+  if (Diag == "SoC") {
+    p_SH <- p_SH_SoC
+  } else if (Diag == "AB") {
+    p_SH <- p_SH_diagAB 
+  }
+   
+  # create matrix of state transition probabilities
+  m_p_t           <- matrix(data = 0, nrow = n_states, ncol = n_i)  
+  # give the state names to the rows
+  rownames(m_p_t) <-  v_names_states                               
+  
+  # lookup baseline probability and rate of dying based on individual characteristics
+  p_HD_all <- inner_join(x = df_X, y = p_mort, by = c("Age"))
+  p_HD     <- p_HD_all[M_t == "H", "p_HD"]
+  
+      # lookup baseline probability and rate of becoming sick based on individual characteristics (Age)  
+  # p_HS_all <- inner_join(x = df_X, y = df_p_sick, by = c("Age"))
+  # p_HS     <- p_HS_all[M_t == "H", "p_HS"]
+ 
+  # update m_p_t with the appropriate probabilities 
+  # (all non-death probabilities are conditional on survival)
+  # transition probabilities when Healthy 
+  m_p_t["H", M_t == "H"] <- (1 - p_HD) * (1 - p_HS)
+  m_p_t["S", M_t == "H"] <- (1 - p_HD) * p_HS 
+  m_p_t["D", M_t == "H"] <-      p_HD 
+  
+  
+  # transition probabilities when Sick 
+  m_p_t["H", M_t == "S"] <-  (1 - v_p_SD[df_X$n_cycles]) * p_SH
+  m_p_t["S", M_t == "S"] <-  (1 - v_p_SD[df_X$n_cycles]) * (1 - p_SH)
+  m_p_t["D", M_t == "S"] <-      v_p_SD[df_X$n_cycles]   
+  
+
+  # transition probabilities when Dead
+  m_p_t["H", M_t == "D"] <- 0
+  m_p_t["S", M_t == "D"] <- 0
+  m_p_t["D", M_t == "D"] <- 1  
+  
+  return(t(m_p_t))
+}       
+```
+
+## 05.2 Cost function
+
+The `Costs` function estimates the costs at every cycle.
+
+```{r}
+# Your turn
+Costs <- function (M_t, Diag = "SoC") {
+  # Arguments:
+    # M_t: health state occupied at cycle t (character variable)
+    # Diag:  diagnosis
+  # Returns: 
+    # costs accrued in this cycle
+
+    # Diagnosis specific costs
+  if (Diag == "SoC") {
+    c_diag <- c_diagSoC
+  } else if (Diag == "AB") {
+    c_diag <- c_diagAB
+  } 
+  
+  c_t <- c()
+  c_t[M_t == "H"] <- c_H  # costs accrued by being healthy this cycle
+  c_t[M_t == "S"] <- c_S + c_diag         # costs accrued by being sick this cycle
+  c_t[M_t == "D"] <- c_D          # costs at dead state
+  
+  return(c_t)  # return costs accrued this cycle
+}
+
+```
+
+## 05.3 Health outcome function
+
+The `Effs` function to update the utilities at every cycle.
+
+```{r}
+Effs <- function (M_t, cycle_length = 1, Diag = "SoC") {
+  # Arguments:
+    # M_t: health state occupied at cycle t (character variable)
+    # cl:  cycle length (default is 1)
+    # df_X: data frame with individual characteristics data (TA added)
+    # Diag:  Diagnosis
+  # Returns: 
+    # QALYs accrued this cycle 
+
+  u_t <- 0                          # by default the utility for everyone is zero
+  u_t[M_t == "H"]    <- u_H         # update the utility if healthy
+  
+  if (Diag == "SoC") {  # update the utility if sick under standard of care
+    u_t[M_t == "S"] <- u_S  
+  } else if (Diag == "AB") {
+    u_t[M_t == "S"] <- u_diagAB * df_X$x[M_t == "S"]  
+  }
+  
+  u_t[M_t == "D"]    <- u_D         # update the utility if dead
+  
+  QALYs <- u_t * n_cycles  # calculate the QALYs during cycle t
+  return(QALYs)      # return the QALYs accrued this cycle
+}
+```
+
+## 05.4 The Microsimulation function
+
+```{r}
+MicroSim <- function(n_i, df_X, Diag = "SoC", seed = 1, cycle_length = 1, verbose ) {
+  # Arguments:  
+    # n_i: number of individuals
+    # df_X: data frame with individual data 
+    # Diag: diagnosis
+    # seed: seed for the random number generator, default is 1
+    # cycle_length: cycle length 
+  # Returns:
+    # results: data frame with total cost and QALYs
+  
+  set.seed(seed) # set a seed to be able to reproduce the same results
+  
+  # Here, we create three matrices called m_M, m_C and m_E
+  # number of rows is equal to the n_i, the number of columns is equal to n_cycles 
+  # (the initial state and all the n_cycles cycles)
+  # m_M is used to store the health state information over time for every individual
+  # m_C is used to store the costs information over time for every individual
+  # m_E is used to store the effects information over time for every individual
+  
+  m_M <- m_C <- m_E <-  matrix(nrow = n_i, ncol = n_cycles + 1, 
+                               dimnames = list(paste("ind"  , 1:n_i, sep = " "), 
+                                               paste("cycle", 0:n_cycles, sep = " ")))  
+ 
+  m_M[, 1] <- as.character(df_X$M_init) # initial health state at cycle 0 for individual i
+  m_C[, 1] <- Costs(m_M[, 1])           # costs per individual during cycle 0
+  m_E[, 1] <- Effs( m_M[, 1], cycle_length = cycle_length)   # QALYs per individual during cycle 0
+  
+  # open a loop for time running cycles 1 to n_cycles 
+  for (t in 1:n_cycles) {
+    print(t)
+    # calculate the transition probabilities for the cycle based on health state t
+    m_P <- Probs(m_M[, t], df_X, Diag = Diag)
+    # check if transition probabilities are between 0 and 1
+    check_transition_probability(m_P, verbose = TRUE)
+    # check if each of the rows of the transition probabilities matrix sum to one
+    check_sum_of_transition_array(m_P, n_rows = n_i, n_cycles = n_cycles, verbose = TRUE)
+    
+    # sample the next health state and store that state in matrix m_M
+    m_M[, t + 1]  <- samplev(m_P, 1)    
+    # calculate costs per individual during cycle t + 1
+    m_C[, t + 1]  <- Costs(m_M[, t + 1], Diag = Diag)  
+    # calculate QALYs per individual during cycle t + 1
+    m_E[, t + 1]  <- Effs (m_M[, t + 1], cycle_length = cycle_length)  
+    
+    # update time since illness onset for t + 1 
+    # NOTE: this code has a "reset of history" for time being sick
+    # once someone is not "Sick" anymore, we reset n_cycles (set back to zero)
+    # when you don't want a "reset" replace the last zero with the current value
+    df_X$n_cycles <- if_else(m_M[, t + 1] == "S", df_X$n_cycles + 1, 0) 
+    # update the age of individuals that are alive
+    df_X$Age[m_M[, t + 1] != "D"]  <- df_X$Age[m_M[, t + 1] != "D"] + 1
+    
+    # Display simulation progress
+    if(t/(n_cycles/10) == round(t/(n_cycles/10), 0)) { # display progress every 10%
+      cat('\r', paste(t/n_cycles * 100, "% done", sep = " "))
+    }
+    
+  } # close the loop for the time points 
+  
+  # Discounted total expected QALYs and Costs per strategy and apply cycle correction
+  tc      <- m_C %*% (v_dwc * v_wcc)  # total (discounted and cycle corrected) cost per individual
+  te      <- m_E %*% (v_dwe * v_wcc)  # total (discounted and cycle corrected) QALYs per individual 
+  
+  tc_hat  <- mean(tc)       # average (discounted and cycle corrected) cost 
+  te_hat  <- mean(te)       # average (discounted and cycle corrected) QALY  
+  # store the results from the simulation in a list
+  results <- list(m_M = m_M, m_C = m_C, m_E = m_E, tc = tc , te = te, 
+                  tc_hat = tc_hat, te_hat = te_hat)   
+  
+  return(results)  # return the results
+
+}
+```
+
+# 06 Run Microsimulation
+
+```{r, eval = TRUE, echo = TRUE, warning = FALSE, message = FALSE, results = FALSE }
+# Your turn
+outcomes_SoC  <- MicroSim(n_i = n_i, df_X = df_X, seed = 1, cycle_length = cycle_length, Diag = "SoC")  # Run for Standard of Care
+outcomes_diagAB <- MicroSim(n_i = n_i, df_X = df_X, seed = 1, cycle_length = cycle_length, Diag = "AB") # Run simulation for strategy AB
+```
+
+# 07 Visualize results
+
+```{r}
+# Standard of Care
+plot(density(outcomes_SoC$tc), main = paste("Total cost per person"),  xlab = "Cost ($)")
+plot(density(outcomes_SoC$te), main = paste("Total QALYs per person"), xlab = "QALYs")
+plot_trace_microsim(outcomes_SoC$m_M)      # health state trace
+```
+
+The first plot represents the distribution of total costs per person. The cost distribution is right-skewed, indicating that while most individuals accumulate costs in the $150,000–$250,000 range, some cases incur significantly higher costs. The peak appears between $175,000 and $225,000, suggesting this is the most common cost burden.
+
+The second plot illustrates the distribution of total quality-adjusted life years (QALYs) per individual. There is a strong peak around 500 QALYs, suggesting that most individuals maintain a relatively high quality of life and long survival. The right-skewed shape indicates that a few individuals achieve even higher QALYs, while others accumulate fewer due to illness or death.
+
+The third graph tracks the proportion of individuals in each health state over 30 cycles. Initially, most individuals start in the Healthy (H) state, but over time, more transition into the Sick (S) and Dead (D) states. The Sick state increases rapidly in the first few cycles before stabilizing and declining. Meanwhile, the proportion of deceased individuals (D) gradually rises. The total proportion correctly sums to 1 at each cycle.
+
+```{r}
+# Strategy AB
+# Treatment AB
+plot(density(outcomes_diagAB$tc), main = paste("Total cost per person"),  xlab = "Cost ($)")
+plot(density(outcomes_diagAB$te), main = paste("Total QALYs per person"), xlab = "QALYs")
+plot_trace_microsim(outcomes_diagAB$m_M)     # health state trace
+
+```
+
+The first plot represents the distribution of total costs per person. The distribution is right-skewed, with most costs accumulating in the range of $200,000 to $400,000, and a peak around $300,000. Some individuals experience significantly higher costs, but the frequency decreases beyond $450,000.
+
+The second plot illustrates the distribution of total quality-adjusted life years (QALYs) per individual. There is a strong peak around 500 QALYs, suggesting that most individuals experience relatively high quality of life and longevity. A small proportion of the population accumulates lower QALYs, indicating some early deaths or long-term health issues, but the distribution remains heavily right-skewed.
+
+The third plot tracks the proportion of individuals in each health state over 30 cycles. Initially, most individuals start in the Healthy (H) state (black line). Over time:
+
+The proportion of Sick (S) individuals (red line) increases rapidly in the first few cycles before stabilizing and eventually declining.
+The proportion of deceased individuals (D) (green line) gradually rises, overtaking the Sick population in later cycles.
+The Healthy population continuously declines as more individuals transition into Sick or Dead.
+
+# 08 Cost-effectiveness analysis (CEA)
+
+```{r}
+# store the mean costs of each strategy in a new variable C (vector of costs)
+v_C <- c(outcomes_SoC$tc_hat, outcomes_diagAB$tc_hat)
+# store the mean QALYs of each strategy in a new variable E (vector of effects)
+v_E <- c(outcomes_SoC$te_hat, outcomes_diagAB$te_hat)
+
+# use dampack to calculate the ICER
+df_cea <- calculate_icers(cost       = v_C,
+                          effect     = v_E,
+                          strategies = v_names_str)
+df_cea
+
+## CEA table in proper format 
+table_cea <- format_table_cea(df_cea) 
+table_cea
+
+```
+
+Affordability: The decision to adopt Strategy AB depends on whether the ICER is below the willingness-to-pay (WTP) threshold. If the WTP threshold is higher than $4,694.37, then Strategy AB is cost-effective.
+
+Cost-effectiveness decision:
+If the WTP threshold is much higher than $4,694, Strategy AB should be adopted.
+If the WTP is lower, it may not be cost-effective despite the higher QALYs.
+Neither strategy is strictly worse, since they are not dominated. 
+
+```{r}
+## CEA frontier 
+plot(df_cea, label = "all", txtsize = 14) +
+  theme(legend.position = c(0.8, 0.3))
+```
+
+Strategy AB improves health outcomes but at a higher cost.
+The efficient frontier confirms that both strategies are viable choices.
+Its cost-effectiveness depends on the WTP threshold.
