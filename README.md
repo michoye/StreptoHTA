@@ -11,7 +11,8 @@ The results are summarized through plots, tables, and a structured report.
 ---
 
 ## 📂 Project Structure
-📁 data/ # Contains probability data and input parameters 
+📁 data/ # Contains probability data and input parameters
+📁 docs/ # Contains the relevant literature for the case 
 📁 figs/ # Stores all generated plots 
 📁 report/ # Contains the final .html markdown report 
 📁 tables/ # Stores formatted tables used in the analysis 
