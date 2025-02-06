@@ -71,8 +71,8 @@ p_load_gh("DARTH-git/darthtools")
 ## General setup 
 set.seed(1)               # set the seed  
 cycle_length   <- 1/12       # cycle length equal to one year (use 1/12 for monthly)
-n_cycles       <- 60      # time horizon, number of cycles
-n_i            <- 100000  # number of individuals
+n_cycles       <- 24      # time horizon, number of cycles
+n_i            <- 10000  # number of individuals
 
 # the 4 health states of the model:
 v_names_states  <- c("H",  # Healthy (H)
@@ -136,6 +136,8 @@ u_H     <- 1     # monthly utility of being Healthy
 u_S     <- 0.85  # monthly utility of being Sick
 u_D     <- 0     # monthly utility of being dead
 u_diagAB <- 0.95  # monthly utility when receiving diagnosis AB when in Sick
+
+  wtp = 20000 # Fictional Willingness-to-pay threshold
 ```
 
 ```{r}
@@ -523,3 +525,305 @@ plot(df_cea, label = "all", txtsize = 14) +
 ```
 
 The efficient frontier confirms that Strategy AB is more effective but at a higher cost. The incremental cost-effectiveness ratio (ICER) is \~\$14,247/QALY, meaning Strategy AB is cost-effective only if decision-makers are willing to pay at least this amount per QALY gained. The choice depends on the WTP threshold—if higher than \$14,247/QALY, Strategy AB is preferred, otherwise, SoC remains the cost-effective choice.
+
+# 09 Deterministic Sensitivity Analysis
+
+```{r}
+
+## Load model, CEA and PSA
+source('Functions_StreptoHTA.R')
+```
+
+## 09.1 Model input for SA
+
+```{r}
+l_params_all <- list(
+  # Transition probabilities
+  # probability of dying
+  p_HS         = 1 - (1 - 0.1)^(1/12),     # probability of becoming sick when healthy
+  p_SH_SoC         = 1 - (1 - 0.88)^(1/12),      # probability of recovering to healthy when sick and diagnosed through SoC
+  p_SH_diagAB          = 1 - (1 - 0.93)^(1/12),  # probability of recovering to healthy when sick and diagnosed through AB
+
+  
+  # Costs 
+  c_H     = 500 / 12,  # monthly cost of being Healthy
+  c_S     = 750 / 12,  # monthly cost of being Sick
+  c_D     = 0,     # monthly cost of being dead
+  c_diagSoC = 30, # monthly (very inflated) cost (for this assignment) of receiving diagnosis SoC + treatment when in Sick
+  c_diagAB = 70, # monthly (very inflated) cost (for this assignment) of receiving diagnosis AB + treatment when in Sick
+
+
+  # Utilities 
+  u_H     = 1,     # monthly utility of being Healthy
+  u_S     = 0.85,  # monthly utility of being Sick
+  u_D     = 0,     # monthly utility of being dead
+  u_diagAB = 0.95,  # monthly utility when receiving diagnosis AB when in Sick
+
+  # Discount rates
+  d_e       = 0.03,  # discount rate per cycle equal discount of costs and QALYs by 3%
+  d_c       = 0.03,  # discount rate per cycle equal discount of costs and QALYs by 3%
+  # Time horizon
+  n_cycles  = 24,     # simulation time horizon (number of cycles)
+  cycle_length   = 1/12,
+  
+  wtp = 20000
+  
+  
+)
+```
+
+**Test model functions**
+
+Two functions were defined in the 'Functions_StreptoHTA`.R'` file. The first was the `decision_model()` function which takes in model parameters and outputs the Microsiulation results. The second is the `calculate_ce_out()` function which calls `decision_model()` and uses the resulting Microsimulation results to compute the total costs, QALYs, returning a data frame of costs and QALYs.
+
+```{r}
+# Try the calculate_ce_out() function
+df_ce <- calculate_ce_out(l_params_all)
+df_ce
+
+# Get strategies names (will be used to label plots)
+v_names_str <- df_ce$Strategy
+n_str <- length(v_names_str)
+```
+
+## 9.2 One-way sensitivity analysis (OWSA)
+
+### 9.2.1 OWSA cost parameters only
+
+```{r}
+options(scipen = 999) # disabling scientific notation in R
+# dataframe containing all parameters, their base case values, and the min and 
+# max values of the parameters of interest 
+df_params_owsa <- data.frame(pars = c("c_diagAB", "c_S"),
+                             min  = c(20, 30),  # min parameter values
+                             max  = c(100, 150)  # max parameter values
+                             )
+owsa_nmb  <- run_owsa_det(params_range     = df_params_owsa,    # dataframe with parameters for OWSA
+                          params_basecase  = l_params_all,      # list with all parameters
+                          nsamp            = 100,               # number of parameter values
+                          FUN              = calculate_ce_out,  # function to compute outputs
+                          outcomes         = c("NMB"),          # output to do the OWSA on
+                          strategies       = v_names_str,       # names of the strategies
+                          n_wtp            = 20000)              # extra argument to pass to FUN
+```
+
+```{r}
+plot(owsa_nmb, txtsize = 10, n_x_ticks = 4, 
+     facet_scales = "free") +
+     theme(legend.position = "bottom")
+```
+
+### 10.2.2 OWSA demonstrating other values
+
+A OWSA does not have to be not limited to costs. All types of input parameters can be explored, like utility value
+
+```{r}
+options(scipen = 999) # disabling scientific notation in R
+# dataframe containing all parameters, their base case values, and the min and 
+# max values of the parameters of interest 
+df_params_owsa <- data.frame(pars = c("p_HS", "u_S"),
+                             min  = c(0.005,   0.70),  # min parameter values
+                             max  = c(0.05, 0.95)  # max parameter values
+                             )
+
+# Make a new object, for the rates and utilities we like to explore
+# We call it owsa_nmb_r_u
+owsa_nmb_r_u  <- run_owsa_det(params_range     = df_params_owsa,    # dataframe with parameters for OWSA
+                              params_basecase  = l_params_all,      # list with all parameters
+                              nsamp            = 100,               # number of parameter values
+                              FUN              = calculate_ce_out,  # function to compute outputs
+                              outcomes         = c("NMB"),          # output to do the OWSA on
+                              strategies       = v_names_str,       # names of the strategies
+                              n_wtp            = 20000)              # extra argument to pass to FUN
+```
+
+```{r}
+plot(owsa_nmb_r_u, txtsize = 10, n_x_ticks = 4, 
+     facet_scales = "free") +
+     theme(legend.position = "bottom")
+```
+
+## 9.3 Two-way sensitivity analysis (TWSA)
+
+```{r}
+# dataframe containing all parameters, their basecase values, and the min and 
+# max values of the parameters of interest
+df_params_twsa <- data.frame(pars = c("c_diagSoC", "c_diagAB"),
+                             min  = c(10, 50),  # min parameter values
+                             max  = c(50, 100) # max parameter values
+                             )
+
+twsa_nmb <- run_twsa_det(params_range    = df_params_twsa,    # dataframe with parameters for TWSA
+                         params_basecase = l_params_all,      # list with all parameters
+                         nsamp           = 40,                # number of parameter values
+                         FUN             = calculate_ce_out,  # function to compute outputs
+                         outcomes        = "NMB",             # output to do the TWSA on
+                         strategies      = v_names_str,       # names of the strategies
+                         n_wtp           = 20000)              # extra argument to pass to FUN
+```
+
+### 9.3.1 Plot TWSA
+
+```{r}
+plot(twsa_nmb)
+```
+
+# 10 Probabilistic Sensitivity Analysis (PSA)
+
+## 10.1 Model input
+
+```{r}
+# Store the parameter names into a vector
+v_names_params <- names(l_params_all)
+
+## Test functions to generate CE outcomes and PSA dataset 
+# Test function to compute CE outcomes
+calculate_ce_out(l_params_all) 
+
+# Test function to generate PSA input dataset
+generate_psa_params(n_sim = 10) 
+
+## Generate PSA dataset 
+# Number of simulations
+n_sim <- 100
+
+# Generate PSA input dataset
+df_psa_input <- generate_psa_params(n_sim = n_sim)
+# First six observations
+head(df_psa_input)
+
+### Histogram of parameters 
+ggplot(melt(df_psa_input, variable.name = "Parameter"), aes(x = value)) +
+  facet_wrap(~Parameter, scales = "free") +
+  geom_histogram(aes(y = ..density..)) +
+  ylab("") +
+  theme_bw(base_size = 16) + 
+  theme(axis.text = element_text(size = 6),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.y  = element_blank(),
+        axis.ticks.y = element_blank()) 
+```
+
+## 10.2 Run PSA
+
+```{r}
+# Initialize data.frames with PSA output 
+# data.frame of costs
+df_c <- as.data.frame(matrix(0, 
+                             nrow = n_sim,
+                             ncol = n_str))
+colnames(df_c) <- v_names_str
+# data.frame of effectiveness
+df_e <- as.data.frame(matrix(0, 
+                             nrow = n_sim,
+                             ncol = n_str))
+colnames(df_e) <- v_names_str
+
+# Conduct probabilistic sensitivity analysis
+# Run Markov model on each parameter set of PSA input dataset
+n_time_init_psa_series <- Sys.time()
+for (i in 1:n_sim) { # i <- 1
+  l_psa_input <- update_param_list(l_params_all, df_psa_input[i,])
+  # Outcomes
+  l_out_ce_temp  <- calculate_ce_out(l_psa_input)
+  df_c[i, ]  <- l_out_ce_temp$Cost  
+  df_e[i, ]  <- l_out_ce_temp$Effect
+  # Display simulation progress
+  if (i/(n_sim/100) == round(i/(n_sim/100), 0)) { # display progress every 5%
+    cat('\r', paste(i/n_sim * 100, "% done", sep = " "))
+  }
+}
+n_time_end_psa_series <- Sys.time()
+n_time_total_psa_series <- n_time_end_psa_series - n_time_init_psa_series
+print(paste0("PSA with ", scales::comma(n_sim), " simulations run in series in ", 
+             round(n_time_total_psa_series, 2), " ", 
+             units(n_time_total_psa_series)))
+```
+
+# 10.3 Visualize PSA results for CEA
+
+```{r}
+### Create PSA object 
+l_psa <- make_psa_obj(cost          = df_c, 
+                      effectiveness = df_e, 
+                      parameters    = df_psa_input, 
+                      strategies    = v_names_str)
+l_psa$strategies <- v_names_str
+colnames(l_psa$effectiveness) <- v_names_str
+colnames(l_psa$cost) <- v_names_str
+
+# Vector with willingness-to-pay (WTP) thresholds.
+v_wtp <- seq(0, 20000, by = 1000)
+```
+
+## 10.3.1 Cost-Effectiveness Scatter plot
+
+```{r}
+### Cost-Effectiveness Scatter plot 
+txtsize <- 13
+gg_scattter <- plot_psa(l_psa, txtsize = txtsize) +
+  ggthemes::scale_color_colorblind() +
+  ggthemes::scale_fill_colorblind() +
+  scale_y_continuous("Cost (Thousand $)", 
+                     breaks = number_ticks(10),
+                     labels = function(x) x/1000) +
+  xlab("Effectiveness (QALYs)") +
+  guides(col = guide_legend(nrow = 2)) +
+  theme(legend.position = "bottom")
+gg_scattter
+```
+
+## 10.3.2 Incremental cost-effectiveness ratios (ICERs) with probabilistic output
+
+```{r}
+### Incremental cost-effectiveness ratios (ICERs) with probabilistic output 
+# Compute expected costs and effects for each strategy from the PSA
+df_out_ce_psa <- summary(l_psa)
+df_cea_psa <- calculate_icers(cost       = df_out_ce_psa$meanCost, 
+                              effect     = df_out_ce_psa$meanEffect,
+                              strategies = df_out_ce_psa$Strategy)
+df_cea_psa
+```
+
+## 10.3.3 Plot cost-effectiveness frontier with probabilistic output
+
+```{r}
+### Plot cost-effectiveness frontier with probabilistic output 
+plot_icers(df_cea_psa, label = "all", txtsize = txtsize) +
+  expand_limits(x = max(table_cea$QALYs) + 0.1) +
+  theme(legend.position = c(0.8, 0.3))
+```
+
+## 10.3.4 Cost-effectiveness acceptability curves (CEACs) and frontier (CEAF)
+
+This figure shows the Cost-effectiveness acceptability curves. The CEAC shows the probability that a specific strategy is cost-effective (based on all results from the PSA iterations). The cost-effectiveness frontier consist of the set of points corresponding to treatment alternatives taht are considered cost-effective at differnet values of the WTP threshold.
+
+```{r}
+### Cost-effectiveness acceptability curves (CEACs) and frontier (CEAF) 
+ceac_obj <- ceac(wtp = v_wtp, psa = l_psa)
+# Regions of highest probability of cost-effectiveness for each strategy
+summary(ceac_obj)
+# CEAC & CEAF plot
+gg_ceac <- plot_ceac(ceac_obj, txtsize = txtsize, xlim = c(0, NA), n_x_ticks = 14) +
+  ggthemes::scale_color_colorblind() +
+  ggthemes::scale_fill_colorblind() +
+  theme(legend.position = c(0.8, 0.48))
+gg_ceac
+```
+
+# Acknowlegdement
+
+For this work we made use of the template developed by the Decision Analysis in R for Technologies in Health (DARTH) workgroup: <http://darthworkgroup.com>.
+
+The notation of our code is based on the following provided framework and coding convention: Alarid-Escudero, F., Krijkamp, E., Pechlivanoglou, P. et al. A Need for Change! A Coding Framework for Improving Transparency in Decision Modeling. PharmacoEconomics 37, 1329–1339 (2019). <https://doi.org/10.1007/s40273-019-00837-x>.
+
+-   Alarid-Escudero F, Krijkamp EM, Enns EA, Yang A, Hunink MGM Pechlivanoglou P, Jalal H. An Introductory Tutorial on Cohort State-Transition Models in R Using a Cost-Effectiveness Analysis Example. Medical Decision Making, 2023; 43(1). (Epub). <https://doi.org/10.1177/0272989X221103163>
+
+-   Alarid-Escudero F, Krijkamp EM, Enns EA, Yang A, Hunink MGM Pechlivanoglou P, Jalal H. A Tutorial on Time-Dependent Cohort State-Transition Models in R using a Cost-Effectiveness Analysis Example. Medical Decision Making, 2023; 43(1). <https://doi.org/10.1177/0272989X221121747>
+
+Other work from DARTH can be found on the website: <http://darthworkgroup.com/publications/>
+
+# Copyright for assignment work
+
+Copyright 2017, THE HOSPITAL FOR SICK CHILDREN AND THE COLLABORATING INSTITUTIONS.All rights reserved in Canada, the United States and worldwide. Copyright, trademarks, trade names and any and all associated intellectual property are exclusively owned by THE HOSPITAL FOR Sick CHILDREN and the collaborating institutions. These materials may be used, reproduced, modified, distributed and adapted with proper attribution.
