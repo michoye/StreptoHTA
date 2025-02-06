@@ -15,34 +15,69 @@ In this exercise, we will model Group A Streptococcal (GAS) pharyngitis using an
 
 **Table 1: Input parameters for the time dependent Sick-Sicker Microsimulation**
 
-| **Parameter** | **R name** | **Value** |
-|:---------------------------------|:------------------|:-----------------:|
-| Time horizon | `n_cycles` | 30 years |
-| Cycle length | `cycle_length` | 1 year |
-| Names of simulated individuals | `n_i` | 100000 |
-| Names of health states | `v_names_states` | H, S, D |
-| Annual discount rate (costs/QALYs) | `d_e` `d_c` | 3% |
-| Population characteristics |  |  |
-| \- Age distribution | -- | Range:5-55 distributed as in `MyPopulation-AgeDistribution.csv` |
-| Annual transition probabilities conditional on survival |  |  |
-| \- Disease onset (H to S) | `p_HS` | 0.25 |
-| \- Recovery (S to H) | `p_SH` | 0.12 |
-| Annual mortality |  |  |
-| \- All-cause mortality (H to D) | `p_HD` | Human Mortality Database (`mortProb_age.csv`): age dependent from 2015 |
-| \- Probability of death is S (S to D) | `p_SD` | dependent on state-residency |
-| Annual costs |  |  |
-| \- Healthy individuals | `c_H` | \$2,000 |
-| \- Sick individuals in S | `c_S` | \$4,000 |
-| \- Dead individuals | `c_D` | \$0 |
-| \- Additional cost of diagnosis for sick individuals (Throat Culture vs. RADT) | `c_diagAB` | \$1,000 |
-| Utility weights |  |  |
-| \- Healthy individuals | `u_H` | 1.00 |
-| \- Sick individuals in S | `u_S` | 0.75 |
-| \- Dead individuals | `u_D` | 0.00 |
-| Intervention effect |  |  |
-| \- Utility for treated individuals in S | `u_diagAB` | 0.8 |
-| Time varying extension of Sick-Sicker model |  |  |
-| \- Treatment effect modifier at baseline | `v_x` | Uniform(0.95, 1.05) |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| **Parameter**                                                                  | **R name**       | **Value**                                                              | Notes                                                                                                                                                                                                                                                                                               |
++:===============================================================================+:=================+:======================================================================:+=====================================================================================================================================================================================================================================================================================================+
+| Time horizon                                                                   | `n_cycles`       | 30 years                                                               |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Cycle length                                                                   | `cycle_length`   | 1 year                                                                 |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Names of simulated individuals                                                 | `n_i`            | 100000                                                                 |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Names of health states                                                         | `v_names_states` | H, S, D                                                                |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Monthly discount rate (costs/QALYs)                                            | `d_e` `d_c`      | 3%                                                                     |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Population characteristics                                                     |                  |                                                                        |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Age distribution                                                            | --               | Range:5-55 distributed as in `MyPopulation-AgeDistribution.csv`        |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Monthly transition probabilities conditional on survival                       |                  |                                                                        |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Disease onset (H to S)                                                      | `p_HS`           | 0.25                                                                   | Way too high for yearly transition probability from healthy to sick. Per year 0.25 chance of getting sick. Most children get strep throat **once every few years**, not monthly. Consider adjusting this based on actual **incidence rates of GAS pharyngitis** in children (which are much lower). |
+|                                                                                |                  |                                                                        |                                                                                                                                                                                                                                                                                                     |
+|                                                                                |                  |                                                                        | So 0.1                                                                                                                                                                                                                                                                                              |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Recovery (S to H)                                                           | `p_SH`           | 0.12                                                                   | **12% monthly recovery rate from sick (`S`) to healthy (`H`)** suggests that most cases **stay sick for many years**. GAS pharyngitis **resolves in days to weeks**, so **recovery should be much higher** (possibly **\>90% per cycle**).                                                          |
+|                                                                                |                  |                                                                        |                                                                                                                                                                                                                                                                                                     |
+|                                                                                |                  |                                                                        | 1.0                                                                                                                                                                                                                                                                                                 |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Monthly mortality                                                              |                  |                                                                        |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- All-cause mortality (H to D)                                                | `p_HD`           | Human Mortality Database (`mortProb_age.csv`): age dependent from 2015 |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Probability of death if S (S to D)                                          | `p_SD`           | dependent on state-residency                                           | A low risk of dying due to sore throat...                                                                                                                                                                                                                                                           |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Monthly costs                                                                  |                  |                                                                        |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Healthy individuals                                                         | `c_H`            | \$2,000                                                                | 500                                                                                                                                                                                                                                                                                                 |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Sick individuals in S                                                       | `c_S`            | \$4,000                                                                | 750                                                                                                                                                                                                                                                                                                 |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Dead individuals                                                            | `c_D`            | \$0                                                                    |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Additional cost of diagnosis for sick individuals (Throat Culture vs. RADT) | `c_diagAB`       | \$1,000                                                                | 40 (e.g., RADT 30 vs CT 70)                                                                                                                                                                                                                                                                         |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Utility weights                                                                |                  |                                                                        |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Healthy individuals                                                         | `u_H`            | 1.00                                                                   |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Sick individuals in S                                                       | `u_S`            | 0.75                                                                   | A **0.75 utility weight for sore throat** is **quite low.** A more reasonable **short-term disutility** (e.g., **0.9**) could better reflect the temporary nature of symptoms.                                                                                                                      |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Dead individuals                                                            | `u_D`            | 0.00                                                                   |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Intervention effect                                                            |                  |                                                                        |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Utility for treated individuals in S                                        | `u_diagAB`       | 0.8                                                                    | -   If we change utility of sick, we should increase this to 0.95 as well...                                                                                                                                                                                                                        |
+|                                                                                |                  |                                                                        |                                                                                                                                                                                                                                                                                                     |
+|                                                                                |                  |                                                                        | -   A **utility gain from 0.75 → 0.8 due to diagnosis** suggests that **just diagnosing** (not even treating) GAS improves quality of life.                                                                                                                                                         |
+|                                                                                |                  |                                                                        |                                                                                                                                                                                                                                                                                                     |
+|                                                                                |                  |                                                                        | -   If treatment reduces duration/severity, its effect should be modeled separately                                                                                                                                                                                                                 |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Time varying extension of Sick-Sicker model                                    |                  |                                                                        |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| \- Treatment effect modifier at baseline                                       | `v_x`            | Uniform(0.95, 1.05)                                                    |                                                                                                                                                                                                                                                                                                     |
++--------------------------------------------------------------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 # 01 Load packages
 
@@ -89,8 +124,8 @@ Prevalence
 ```{r}
 ## General setup 
 set.seed(1)               # set the seed  
-cycle_length   <- 1       # cycle length equal to one year (use 1/12 for monthly)
-n_cycles       <- 30      # time horizon, number of cycles
+cycle_length   <- 1/12       # cycle length equal to one year (use 1/12 for monthly)
+n_cycles       <- 60      # time horizon, number of cycles
 n_i            <- 100000  # number of individuals
 
 # the 4 health states of the model:
@@ -101,8 +136,8 @@ v_names_cycles  <- paste("cycle", 0:n_cycles)    # cycle names
 n_states        <- length(v_names_states) # number of health states               
 
 ### Discounting factors 
-d_c <- 0.03 # annual discount rate for costs 
-d_e <- 0.03 # annual discount rate for QALYs
+d_c <- 0.03 # monthly discount rate for costs 
+d_e <- 0.03 # monthly discount rate for QALYs
 
 
 ### Strategies 
@@ -119,38 +154,42 @@ n_str         <- length(v_names_str)     # number of strategies
 #  p_HS <- 0.4
 # }
 
-p_HS         <- 0.25     # probability of becoming sick when healthy
-p_SH_SoC         <- 0.12      # probability of recovering to healthy when sick and diagnosed through SoC
-p_SH_diagAB          <- 0.18  # probability of recovering to healthy when sick and diagnosed through AB
+p_HS         <- 1 - (1 - 0.1)^(1/12)     # probability of becoming sick when healthy
+p_SH_SoC         <- 1 - (1 - 0.88)^(1/12)      # probability of recovering to healthy when sick and diagnosed through SoC
+p_SH_diagAB          <- 1 - (1 - 0.93)^(1/12)  # probability of recovering to healthy when sick and diagnosed through AB
 
 
-# Annual probabilities of death
+# Monthly probabilities of death
 # load age dependent probability
 p_mort   <- read.csv("data/mortProb_age.csv")
+# Adjust to monthly probabilities
+p_mort$p_HD <- 1 - (1 - p_mort$p_HD)^(1/12)
+
 # load age distribution
 dist_Age <- read.csv("data/MyPopulation-AgeDistribution.csv") 
 
-# Annual probabilities of becoming sick
+# Monthly probabilities of becoming sick
 # We created a new matrix
 df_p_sick <- data.frame(Age = 1:107)
 df_p_sick$p_HS <- ifelse(df_p_sick$Age <= 18, 0.4, 0.1)
 
 # probability to die in S by cycle (is increasing)
-v_p_SD    <- c(0.0149, 0.018, 0.021, 0.026, 0.031, rep(0.037, n_cycles - 5)) 
+v_p_SD <- 1 - (1 - c(0.005, 0.007, 0.01, 0.02, 0.03, rep(0.04, n_cycles - 5)))^(1/12)
+
 
 ### State rewards 
 #### Costs 
-c_H     <- 2000  # annual cost of being Healthy
-c_S     <- 4000  # annual cost of being Sick
-c_D     <- 0     # annual cost of being dead
-c_diagSoC <- 1000 # annual (very inflated) cost (for this assignment) of receiving diagnosis SoC + treatment when in Sick
-c_diagAB <- 2000 # annual (very inflated) cost (for this assignment) of receiving diagnosis AB + treatment when in Sick
+c_H     <- 500 / 12  # monthly cost of being Healthy
+c_S     <- 750 / 12  # monthly cost of being Sick
+c_D     <- 0     # monthly cost of being dead
+c_diagSoC <- 30 # monthly (very inflated) cost (for this assignment) of receiving diagnosis SoC + treatment when in Sick
+c_diagAB <- 70 # monthly (very inflated) cost (for this assignment) of receiving diagnosis AB + treatment when in Sick
 
 #### Utilities 
-u_H     <- 1     # annual utility of being Healthy
-u_S     <- 0.75  # annual utility of being Sick
-u_D     <- 0     # annual utility of being dead
-u_diagAB <- 0.8  # annual utility when receiving diagnosis AB when in Sick
+u_H     <- 1     # monthly utility of being Healthy
+u_S     <- 0.85  # monthly utility of being Sick
+u_D     <- 0     # monthly utility of being dead
+u_diagAB <- 0.95  # monthly utility when receiving diagnosis AB when in Sick
 ```
 
 ```{r}
@@ -181,8 +220,8 @@ dev.off()
 
 ```{r}
 ### Discount weight for costs and effects 
-v_dwc   <- 1 / ((1 + (d_c * cycle_length)) ^ (0:n_cycles))
-v_dwe   <- 1 / ((1 + (d_e * cycle_length)) ^ (0:n_cycles))
+v_dwc <- (1 / (1 + d_c)^(1/12)) ^ (0:n_cycles)
+v_dwe <- (1 / (1 + d_e)^(1/12)) ^ (0:n_cycles)
 
 # Within-cycle correction (WCC) - method  options Simpson's 1/3 rule, "half-cycle" or "none" 
 v_wcc    <- darthtools::gen_wcc(n_cycles = n_cycles, 
@@ -342,7 +381,7 @@ Effs <- function (M_t, cycle_length = 1, Diag = "SoC") {
   
   u_t[M_t == "D"]    <- u_D         # update the utility if dead
   
-  QALYs <- u_t * n_cycles  # calculate the QALYs during cycle t
+  QALYs <- u_t * cycle_length  # calculate the QALYs during cycle t
   return(QALYs)      # return the QALYs accrued this cycle
 }
 ```
@@ -456,7 +495,7 @@ plot_trace_microsim(outcomes_SoC$m_M)
 par(mfrow = c(1, 1))  # Reset layout
 ```
 
-The first plot represents the distribution of total costs per person. The cost distribution is right-skewed, indicating that while most individuals accumulate costs in the $150,000–$250,000 range, some cases incur significantly higher costs. The peak appears between $175,000 and $225,000, suggesting this is the most common cost burden.
+The first plot represents the distribution of total costs per person. The cost distribution is right-skewed, indicating that while most individuals accumulate costs in the \$150,000–\$250,000 range, some cases incur significantly higher costs. The peak appears between \$175,000 and \$225,000, suggesting this is the most common cost burden.
 
 The second plot illustrates the distribution of total quality-adjusted life years (QALYs) per individual. There is a strong peak around 500 QALYs, suggesting that most individuals maintain a relatively high quality of life and long survival. The right-skewed shape indicates that a few individuals achieve even higher QALYs, while others accumulate fewer due to illness or death.
 
@@ -486,15 +525,13 @@ par(mfrow = c(1, 1))  # Reset layout
 
 ```
 
-The first plot represents the distribution of total costs per person. The distribution is right-skewed, with most costs accumulating in the range of $200,000 to $400,000, and a peak around $300,000. Some individuals experience significantly higher costs, but the frequency decreases beyond $450,000.
+The first plot represents the distribution of total costs per person. The distribution is right-skewed, with most costs accumulating in the range of \$200,000 to \$400,000, and a peak around \$300,000. Some individuals experience significantly higher costs, but the frequency decreases beyond \$450,000.
 
 The second plot illustrates the distribution of total quality-adjusted life years (QALYs) per individual. There is a strong peak around 500 QALYs, suggesting that most individuals experience relatively high quality of life and longevity. A small proportion of the population accumulates lower QALYs, indicating some early deaths or long-term health issues, but the distribution remains heavily right-skewed.
 
 The third plot tracks the proportion of individuals in each health state over 30 cycles. Initially, most individuals start in the Healthy (H) state (black line). Over time:
 
-The proportion of Sick (S) individuals (red line) increases rapidly in the first few cycles before stabilizing and eventually declining.
-The proportion of deceased individuals (D) (green line) gradually rises, overtaking the Sick population in later cycles.
-The Healthy population continuously declines as more individuals transition into Sick or Dead.
+The proportion of Sick (S) individuals (red line) increases rapidly in the first few cycles before stabilizing and eventually declining. The proportion of deceased individuals (D) (green line) gradually rises, overtaking the Sick population in later cycles. The Healthy population continuously declines as more individuals transition into Sick or Dead.
 
 # 08 Cost-effectiveness analysis (CEA)
 
@@ -522,12 +559,9 @@ table_cea
 
 ```
 
-Affordability: The decision to adopt Strategy AB depends on whether the ICER is below the willingness-to-pay (WTP) threshold. If the WTP threshold is higher than $4,694.37, then Strategy AB is cost-effective.
+Affordability: The decision to adopt Strategy AB depends on whether the ICER is below the willingness-to-pay (WTP) threshold. If the WTP threshold is higher than \$4,694.37, then Strategy AB is cost-effective.
 
-Cost-effectiveness decision:
-If the WTP threshold is much higher than $4,694, Strategy AB should be adopted.
-If the WTP is lower, it may not be cost-effective despite the higher QALYs.
-Neither strategy is strictly worse, since they are not dominated. 
+Cost-effectiveness decision: If the WTP threshold is much higher than \$4,694, Strategy AB should be adopted. If the WTP is lower, it may not be cost-effective despite the higher QALYs. Neither strategy is strictly worse, since they are not dominated.
 
 ```{r}
 ## CEA frontier 
@@ -544,6 +578,4 @@ plot(df_cea, label = "all", txtsize = 14) +
   theme(legend.position = c(0.8, 0.3))
 ```
 
-Strategy AB improves health outcomes but at a higher cost.
-The efficient frontier confirms that both strategies are viable choices.
-Its cost-effectiveness depends on the WTP threshold.
+Strategy AB improves health outcomes but at a higher cost. The efficient frontier confirms that both strategies are viable choices. Its cost-effectiveness depends on the WTP threshold.

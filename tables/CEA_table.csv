@@ -1,3 +1,3 @@
 "Strategy","Costs ($)","QALYs","Incremental Costs ($)","Incremental QALYs","ICER ($/QALY)","Status"
-"Standard of care","59,049",431.06,NA,NA,NA,"ND"
-"Strategy AB","64,389",454.87,"5,341",23.81,"224","ND"
+"Standard of care","3,392",4.2,NA,NA,NA,"ND"
+"Strategy AB","4,089",4.25,"697",0.05,"14,247","ND"
