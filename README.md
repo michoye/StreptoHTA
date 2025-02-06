@@ -11,9 +11,11 @@ The results are summarized through plots, tables, and a structured report.
 ---
 
 ## 📂 Project Structure
+StreptoHTA Group 4 Assignment.Rmd # Rmd file which leads through analysis and should be used as starting point
 📁 data/ # Contains probability data and input parameters
 📁 docs/ # Contains the relevant literature for the case 
 📁 figs/ # Stores all generated plots 
+📁 figs/ # Stores the functions
 📁 report/ # Contains the final .html markdown report 
 📁 tables/ # Stores formatted tables used in the analysis 
 README.md # This file
