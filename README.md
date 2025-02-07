@@ -12,18 +12,12 @@ The results are summarized through plots, tables, and a structured report.
 
 ## 📂 Project Structure
 StreptoHTA Group 4 Assignment.Rmd # Rmd file which leads through analysis and should be used as starting point
-📁 data/ # Contains probability data and input parameters
-📁 docs/ # Contains the relevant literature for the case, the License agreements, and the documentation for the packages used
-📁 figs/ # Stores all generated plots 
-📁 figs/ # Stores the functions
-📁 report/ # Contains the final .html markdown report 
-📁 tables/ # Stores formatted tables used in the analysis 
 README.md # This file
 
-
 - **`data/`** → Contains all probability data and model inputs used in the analysis.
-- **`figs/`** → Stores plots generated during the cost-effectiveness analysis.
+- **`docs/`** → Contains the relevant literature for the case, the License agreements, and the documentation for the packages used
+- **`figs/`** → Stores all generated plots
+- **`functions/`** → Stores the functions
 - **`report/`** → Includes the final **RMarkdown report (`.html`)** summarizing results.
-- **`tables/`** → Contains tables created during the analysis.
-
+- **`tables/`** → Stores formatted tables used in the analysis 
 ---
