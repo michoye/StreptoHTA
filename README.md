@@ -12,6 +12,7 @@ The results are summarized through plots, tables, and a structured report.
 
 ## 📂 Project Structure
 StreptoHTA Group 4 Assignment.Rmd # Rmd file which leads through analysis and should be used as starting point
+
 README.md # This file
 
 - **`data/`** → Contains all probability data and model inputs used in the analysis.
