@@ -16,7 +16,7 @@ StreptoHTA Group 4 Assignment.Rmd # Rmd file which leads through analysis and sh
 README.md # This file
 
 - **`data/`** → Contains all probability data and model inputs used in the analysis.
-- **`docs/`** → Contains the relevant literature for the case, the License agreements, and the documentation for the packages used
+- **`docs/`** → Contains the CHEERS checklist, relevant literature for the case, the License agreements, and the documentation for the packages used.
 - **`figs/`** → Stores all generated plots
 - **`functions/`** → Stores the functions
 - **`report/`** → Includes the final **RMarkdown report (`.html`)** summarizing results.
