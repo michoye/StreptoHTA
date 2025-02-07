@@ -11,52 +11,63 @@
 #' @export
 calculate_ce_out <- function(l_params_all, n_wtp = 5000, verbose = FALSE){ # User defined
   with(as.list(l_params_all), {
-
+    set.seed(1) 
 
 # ## General setup 
-
-    v_names_states  <- c("H", "S", "D")       # state names, Healthy (H), Sick (S), Dead(D)
-    n_states        <- length(v_names_states) # number of health states 
+    # Calculate model input parameters
+    v_names_cycles  = paste("cycle", 0:n_cycles)    # cycle names
+    n_states        = length(v_names_states)        # number of health states 
+    n_str           = length(v_names_str)           # number of strategies
+    
+    ## 03.2 Calculate internal model parameters
+    
+    # Monthly probabilities of death
+    # load age dependent probability
+    p_mort   <- read.csv("data/mortProb_age.csv")
+    # Adjust to monthly probabilities
+    p_mort$p_HD <- 1 - (1 - p_mort$p_HD)^(1/12)
+    
+    df_p_HS     = data.frame(Sex = c("Child", "Adult"), p_HS = c(p_HS_child, p_HS_adult))
+    
+    # probability to die in S by cycle (is increasing)
+    p_SD <- 1 - (1 - c(0.005, 0.007, 0.01, 0.02, 0.03, rep(0.04, n_cycles - 5)))^(1/12)
     
     
     ### Discount weight for costs and effects 
     v_dwc     <- 1 / ((1 + (d_c * cycle_length)) ^ (0:n_cycles))
     v_dwe     <- 1 / ((1 + (d_e * cycle_length)) ^ (0:n_cycles))
     
-    ## Cycle names
-    v_names_cycles  <- paste("cycle", 0:n_cycles)   
-
-
-    ### Strategies
-    v_names_str <- make.names(c("Standard of care", "Strategy AB"))
+    # Within-cycle correction (WCC) - method  options Simpson's 1/3 rule, "half-cycle" or "none" 
+    v_wcc    <- darthtools::gen_wcc(n_cycles = n_cycles, 
+                                    method = "Simpson1/3") # vector of wcc
     
-    n_str         <- length(v_names_str)     # number of strategies
+    ## 04.1 Static characteristics
+    # randomly sample the sex of an individual (50% female)
+    
+    # load age distribution
+    dist_Age <- read.csv("data/MyPopulation-AgeDistribution.csv") 
+    # sample from the age distribution the initial age for every individual
+    v_age  <- sample(x = dist_Age$age, prob = dist_Age$prop, size = n_i, replace = TRUE)
+    
+    
+    ## 04.2 Dynamic characteristics 
+    # Specify the initial health state of the individuals 
+    # everyone begins in the healthy state (in this example)
+    v_M_init  <- rep("H", times = n_i)   
+    v_Ts_init <- rep(0, n_i)  # a vector with the time of being sick at the start of the model 
+    # sample the treatment effect modifier at baseline
+    v_x     <- runif(n_i, min = 0.95, max = 1.05)
+
+    ## 04.3 Create a dataframe with the individual characteristics 
+    # create a data frame with each individual's 
+    # ID number, treatment effect modifier, age and initial time in sick state 
+    df_X  <- data.frame(ID = 1:n_i, M_x = v_x, Age = v_age, n_cycles_s = v_Ts_init, M_init = v_M_init)
 
 
-# Monthly probabilities of death
-# load age dependent probability
-p_mort   <- read.csv("data/mortProb_age.csv")
-# Adjust to monthly probabilities
-p_mort$p_HD <- 1 - (1 - p_mort$p_HD)^(1/12)
-
-# load age distribution
-dist_Age <- read.csv("data/MyPopulation-AgeDistribution.csv") 
-
-# probability to die in S by cycle (is increasing)
-v_p_SD <- 1 - (1 - c(0.005, 0.007, 0.01, 0.02, 0.03, rep(0.04, n_cycles - 5)))^(1/12)
-
-## ------------------------------------------------------------------------------------------------------------------------------------------------------
-v_M_init  <- rep("H", times = n_i)   # Specify the initial health state of the individuals 
-v_n_cycles_s_init <- rep(0, n_i)  # everyone begins in the healthy state (in this example)
-
-
-## ------------------------------------------------------------------------------------------------------------------------------------------------------
-# data frame with each individual's 
-# ID number, treatment effect modifier, age and initial time in sick state and initial health state at the start of the simulation
-df_X  <- data.frame(ID = 1:n_i, M_x = v_x, Age = v_age0, n_cycles = v_n_cycles_s_init, M_init = v_M_init)
-
-
-## ------------------------------------------------------------------------------------------------------------------------------------------------------
+    # 05 Define Simulation Functions
+    
+    ## 05.1 Probability function
+    #The `Probs` function updates the transition probabilities of every cycle is shown below 
 Probs <- function(M_t, df_X, Diag = "SoC") {
   # Arguments:
     # M_t:  health state occupied at cycle t (character variable)
@@ -104,7 +115,8 @@ Probs <- function(M_t, df_X, Diag = "SoC") {
 }
 
 
-## ------------------------------------------------------------------------------------------------------------------------------------------------------
+## 05.2 Cost function
+# The `Costs` function estimates the costs at every cycle.
 Costs <- function (M_t, Diag = "SoC") {
   # Arguments:
     # M_t: health state occupied at cycle t (character variable)
@@ -129,7 +141,8 @@ Costs <- function (M_t, Diag = "SoC") {
 
 
 
-## ------------------------------------------------------------------------------------------------------------------------------------------------------
+## 05.3 Health outcome function
+#The `Effs` function to update the utilities at every cycle.
 Effs <- function (M_t, cycle_length = 1, Diag = "SoC") {
   # Arguments:
     # M_t: health state occupied at cycle t (character variable)
@@ -139,23 +152,23 @@ Effs <- function (M_t, cycle_length = 1, Diag = "SoC") {
   # Returns:
     # QALYs accrued this cycle
 
-  u_t <- 0                          # by default the utility for everyone is zero
-  u_t[M_t == "H"]    <- u_H         # update the utility if healthy
+  q_t <- 0                          # by default the utility for everyone is zero
+  q_t[M_t == "H"]    <- u_H         # update the utility if healthy
 
   if (Diag == "SoC") {  # update the utility if sick under standard of care
-    u_t[M_t == "S"] <- u_S
+    q_t[M_t == "S"] <- u_S
   } else if (Diag == "AB") {
-    u_t[M_t == "S"] <- u_diagAB * df_X$x[M_t == "S"]
+    q_t[M_t == "S"] <- u_diagAB * df_X$x[M_t == "S"]
   }
 
-  u_t[M_t == "D"]    <- u_D         # update the utility if dead
+  q_t[M_t == "D"]    <- u_D         # update the utility if dead
 
-  QALYs <- u_t * cycle_length  # calculate the QALYs during cycle t
+  QALYs <- q_t * cycle_length  # calculate the QALYs during cycle t
   return(QALYs)      # return the QALYs accrued this cycle
 }
 
 
-## ------------------------------------------------------------------------------------------------------------------------------------------------------
+# Microsimulation
 MicroSim <- function(n_i, df_X, Diag = "SoC", seed = 1, cycle_length = 1, verbose ) {
   # Arguments:  
     # n_i: number of individuals
@@ -181,7 +194,7 @@ MicroSim <- function(n_i, df_X, Diag = "SoC", seed = 1, cycle_length = 1, verbos
  
   m_M[, 1] <- as.character(df_X$M_init) # initial health state at cycle 0 for individual i
   m_C[, 1] <- Costs(m_M[, 1])           # costs per individual during cycle 0
-  m_E[, 1] <- Effs( m_M[, 1], cycle_length = cycle_length)   # QALYs per individual during cycle 0
+  m_E[, 1] <- Effs( m_M[, 1], cycle_length = 1)   # QALYs per individual during cycle 0
   
   # open a loop for time running cycles 1 to n_cycles 
   for (t in 1:n_cycles) {
@@ -197,22 +210,23 @@ MicroSim <- function(n_i, df_X, Diag = "SoC", seed = 1, cycle_length = 1, verbos
     # calculate costs per individual during cycle t + 1
     m_C[, t + 1]  <- Costs(m_M[, t + 1], Diag = Diag)  
     # calculate QALYs per individual during cycle t + 1
-    m_E[, t + 1]  <- Effs (m_M[, t + 1], cycle_length = cycle_length)  
+    m_E[, t + 1]  <- Effs (m_M[, t + 1], cycle_length = 1)  
     
     # update time since illness onset for t + 1 
     # NOTE: this code has a "reset of history" for time being sick
     # once someone is not "Sick" anymore, we reset n_cycles (set back to zero)
     # when you don't want a "reset" replace the last zero with the current value
     df_X$n_cycles <- if_else(m_M[, t + 1] == "S", df_X$n_cycles + 1, 0) 
+    
     # update the age of individuals that are alive
     df_X$Age[m_M[, t + 1] != "D"]  <- df_X$Age[m_M[, t + 1] != "D"] + 1
     
-    # Display simulation progress
-    if (t %% 5 == 0 | t == n_cycles) {  # Print progress every 5 cycles and at the last cycle
-      cat(sprintf("\rSimulation progress: %d/%d cycles (%.1f%% complete)", 
-                  t, n_cycles, (t / n_cycles) * 100))
-      flush.console()  # Ensures immediate printing in RStudio
-    }
+    # # Display simulation progress
+    # if (t %% 5 == 0 | t == n_cycles) {  # Print progress every 5 cycles and at the last cycle
+    #   cat(sprintf("\rSimulation progress: %d/%d cycles (%.1f%% complete)", 
+    #               t, n_cycles, (t / n_cycles) * 100))
+    #   flush.console()  # Ensures immediate printing in RStudio
+    # }
     
   } # close the loop for the time points 
   
@@ -222,62 +236,33 @@ MicroSim <- function(n_i, df_X, Diag = "SoC", seed = 1, cycle_length = 1, verbos
   
   tc_hat  <- mean(tc)       # average (discounted and cycle corrected) cost 
   te_hat  <- mean(te)       # average (discounted and cycle corrected) QALY  
-  # Compute NMB using the willingness-to-pay threshold
-  NMB <- (te_hat * wtp) - tc_hat  # Net Monetary Benefit formula
-  
-  # Store results in a list
-  results <- list(m_M = m_M, m_C = m_C, m_E = m_E, tc = tc, te = te, 
-                  tc_hat = tc_hat, te_hat = te_hat, NMB = NMB)
+  # store the results from the simulation in a list
+  results <- list(m_M = m_M, m_C = m_C, m_E = m_E, tc = tc , te = te, 
+                  tc_hat = tc_hat, te_hat = te_hat)   
   
   return(results)  # return the results
+  
+} # end of the `MicroSim` function 
 
-}
-
-
+# Run the simulation 
 outcomes_SoC  <- MicroSim(n_i = n_i, df_X = df_X, seed = 1, cycle_length = cycle_length, Diag = "SoC")  # Run for Standard of Care
 outcomes_diagAB <- MicroSim(n_i = n_i, df_X = df_X, seed = 1, cycle_length = cycle_length, Diag = "AB") # Run simulation for strategy AB
 
-# # Store the mean costs and QALYs for each strategy
-# v_C <- c(outcomes_SoC$tc_hat, outcomes_diagAB$tc_hat)  # Costs per strategy
-# v_E <- c(outcomes_SoC$te_hat, outcomes_diagAB$te_hat)  # QALYs per strategy
-# v_NMB <- c(outcomes_SoC$NMB, outcomes_diagAB$NMB)      # NMB per strategy
-# 
-# use dampack to calculate the ICER
-df_cea <- calculate_icers(cost       = v_C,
-                          effect     = v_E,
-                          strategies = v_names_str)
+# Cost-Effectiveness Analysis
+# store the mean costs of each strategy in a new variable C (vector of costs)
+v_C <- c(outcomes_SoC$tc_hat, outcomes_diagAB$tc_hat)
+# store the mean QALYs of each strategy in a new variable E (vector of effects)
+v_E <- c(outcomes_SoC$te_hat, outcomes_diagAB$te_hat)
 
-# Define WTP (adjust if needed)
-wtp <- 5000  # Example WTP threshold
+## Vector with discounted net monetary benefits (NMB)
+v_nmb_d <- v_E * n_wtp - v_C
 
-# Define costs and QALYs for each strategy
-cost_SoC <- outcomes_SoC$tc_hat      # Cost for Standard of Care
-cost_AB  <- outcomes_diagAB$tc_hat   # Cost for Strategy AB
-
-qaly_SoC <- outcomes_SoC$te_hat      # QALYs for Standard of Care
-qaly_AB  <- outcomes_diagAB$te_hat   # QALYs for Strategy AB
-
-
-# Compute Net Monetary Benefit (NMB)
-nmb_SoC <- (qaly_SoC * wtp) - cost_SoC
-nmb_AB  <- (qaly_AB * wtp) - cost_AB
-
-df_cea$NMB <- c(nmb_SoC, nmb_AB)  
-
-# # Keep the same column names & structure
-# df_cea <- data.frame(
-#   Strategy     = v_names_str,
-#   Cost         = c(cost_SoC, cost_AB),
-#   Effect       = c(qaly_SoC, qaly_AB),
-#   Inc_Cost     = c(NA, delta_Cost),   # First row is NA (reference)
-#   Inc_Effect   = c(NA, delta_QALY),   # First row is NA (reference)
-#   ICER         = c(NA, ICER),         # First row is NA (reference)
-#   Status       = c("ND", "ND"),       # Assuming 'ND' for both strategies
-#   NMB          = c(nmb_SoC, nmb_AB)   # New column for Net Monetary Benefit
-# )
-
-return(df_cea)
-
+# Dataframe with discounted costs, effectiveness and NMB
+df_ce <- data.frame(Strategy = v_names_str,
+                    Cost     = v_C,
+                    Effect   = v_E,
+                    NMB      = v_nmb_d)
+return(df_ce)
   }
   )
 }
@@ -308,12 +293,12 @@ generate_psa_params <- function(n_sim = 100, seed = 071818){
     
     ## State rewards
     # Costs
-    c_H       = pmin(pmax(rgamma(1000, shape = 100, scale = 5), 200), 800) / 12,        # cost of one cycle in healthy state
-    c_S       = pmin(pmax(rgamma(1000, shape = 100, scale = 5), 400), 1100) / 12,       # cost of one cycle in sick state
+    c_H       = pmin(pmax(rgamma(n_sim, shape = 100, scale = 5), 200), 800) / 12,        # cost of one cycle in healthy state
+    c_S       = pmin(pmax(rgamma(n_sim, shape = 100, scale = 5), 400), 1100) / 12,       # cost of one cycle in sick state
     c_D       = 0,                                            # cost of one cycle in dead state
-    # c_diagSoC = 30, # monthly (very inflated) cost (for this assignment) of receiving diagnosis SoC + treatment when in Sick
-    # c_diagAB = 70, # monthly (very inflated) cost (for this assignment) of receiving diagnosis AB + treatment when in Sick
-    
+    c_diagSoC = pmin(pmax(rgamma(n_sim, shape = 100, scale = 5), 10), 90) / 12, # monthly (very inflated) cost (for this assignment) of receiving diagnosis SoC + treatment when in Sick
+    c_diagAB = pmin(pmax(rgamma(n_sim, shape = 100, scale = 5), 20), 110) / 12, # monthly (very inflated) cost (for this assignment) of receiving diagnosis AB + treatment when in Sick
+
     # Utilities
     u_H       = rbeta(n_sim, shape1 =  1.5, shape2 = 0.0015), # utility when healthy 
     u_S       = pmin(pmax(rbeta(n_sim, shape1 = 172.55, shape2 = 30.45), 0.8), 0.9)

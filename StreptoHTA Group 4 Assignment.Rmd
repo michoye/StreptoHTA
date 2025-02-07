@@ -44,7 +44,7 @@ Disclaimer: The input parameters used were inspired by the literature but were n
 | Intervention effect |  |  |
 | \- Utility for treated individuals in S | `u_diagAB` | 0.95 |
 | Time varying extension of Sick-Sicker model |  |  |
-| \- Treatment effect modifier at baseline | `v_x` | Uniform(0.95, 1.05) |
+| \- Diagnosis effect modifier at baseline | `v_x` | Uniform(0.95, 1.05) |
 
 # 01 Load packages
 
@@ -438,21 +438,21 @@ plot_trace_microsim(outcomes_SoC$m_M)
 par(mfrow = c(1, 1))  # Reset layout
 ```
 
-The first plot represents the distribution of total costs per person. The cost distribution is right-skewed, indicating that while most individuals accumulate costs around \$1000-\$1500, a smaller proportion incurs significantly higher costs. The density spike suggests that the majority of individuals have similar healthcare expenditures.
+The first plot represents the distribution of total costs per person. The cost distribution is right-skewed, indicating that while most individuals accumulate costs around \$1000, a smaller proportion incurs significantly higher costs. The density spike suggests that the majority of individuals have similar healthcare expenditures.
 
-The second plot illustrates the distribution of total quality-adjusted life years (QALYs) per individual. There is a pronounced peak around 1.5 QALYs, indicating that most individuals maintain a relatively stable quality of life throughout the simulation. The distribution is narrow, suggesting little variability in health outcomes among individuals.
+The second plot illustrates the distribution of total quality-adjusted life years (QALYs) per individual. There is a pronounced peak around 2 QALYs, indicating that most individuals maintain a relatively stable quality of life throughout the simulation. The distribution is narrow, suggesting little variability in health outcomes among individuals.
 
-The third graph tracks the proportion of individuals in each health state over 24 cycles. Initially, all individuals start in the Healthy (H) state, but over time, an increasing proportion transitions into the Sick (S) state. The Sick state proportion rises gradually before stabilizing. Meanwhile, the proportion of deceased individuals (D) grows slowly, indicating a gradual accumulation of mortality events. The total proportion of the cohort always sums to 1, ensuring consistency in state transitions.
+The third graph tracks the proportion of individuals in each health state over 24 cycles. Initially, all individuals start in the Healthy (H) state, but over time, an increasing proportion transitions into the Sick (S) state. The Sick state proportion rises gradually before stabilizing. Meanwhile, the proportion of deceased individuals (D) grows very slowly, indicating a gradual accumulation of low mortality events. The total proportion of the cohort always sums to 1, ensuring consistency in state transitions.
 
 ```{r}
 # Strategy AB
 # Save the first plot (Total Cost per Person)
 png("figs/AB_total_cost_per_person_AB.png", width = 800, height = 600)
-plot(density(outcomes_diagAB$tc), main = "Total cost per person (Treatment AB)", xlab = "Cost ($)")
+plot(density(outcomes_diagAB$tc), main = "Total cost per person (Diagnosis AB)", xlab = "Cost ($)")
 dev.off()
 # Save the second plot (Total QALYs per Person)
 png("figs/AB_total_qalys_per_person_AB.png", width = 800, height = 600)
-plot(density(outcomes_diagAB$te), main = "Total QALYs per person (Treatment AB)", xlab = "QALYs")
+plot(density(outcomes_diagAB$te), main = "Total QALYs per person (Diagnosis AB)", xlab = "QALYs")
 dev.off()
 # Save the third plot (Health State Trace)
 png("figs/AB_health_state_trace_AB.png", width = 800, height = 600)
@@ -461,8 +461,8 @@ dev.off()
 
 # Show all plots in R (without saving)
 par(mfrow = c(1, 3))  # Arrange plots in 1 row, 3 columns
-plot(density(outcomes_diagAB$tc), main = "Total cost per person (Treatment AB)", xlab = "Cost ($)")
-plot(density(outcomes_diagAB$te), main = "Total QALYs per person (Treatment AB)", xlab = "QALYs")
+plot(density(outcomes_diagAB$tc), main = "Total cost per person (Diagnosis AB)", xlab = "Cost ($)")
+plot(density(outcomes_diagAB$te), main = "Total QALYs per person (Diagnosis AB)", xlab = "QALYs")
 plot_trace_microsim(outcomes_diagAB$m_M)
 par(mfrow = c(1, 1))  # Reset layout
 
@@ -470,9 +470,9 @@ par(mfrow = c(1, 1))  # Reset layout
 
 The first plot represents the distribution of total costs per person. The cost distribution is heavily right-skewed, with a sharp peak around \$1000. This suggests that most individuals have relatively similar healthcare costs, while a small proportion experiences significantly higher expenses.
 
-The second plot illustrates the distribution of total quality-adjusted life years (QALYs) per person. The strong peak near 1.5 QALYs suggests that most individuals achieve a stable quality of life, with little variation. The right-skewed distribution indicates that a few individuals may have slightly higher QALYs, potentially due to better health states or longer survival.
+The second plot illustrates the distribution of total quality-adjusted life years (QALYs) per person. The strong peak close to 2 QALYs suggests that most individuals achieve a high quality of life, with little variation. The right-skewed distribution indicates that a few individuals may have slightly higher QALYs, potentially due to better health states or longer survival.
 
-The third plot tracks the proportion of individuals in each health state over time. Initially, a large fraction transitions into the sick (S) state. Over time, many recover (S → H), but a subset remains chronically sick. The proportion of deceased individuals (D) gradually rises, reflecting normal mortality progression, while the healthy (H) population stabilizes.
+The third graph tracks the proportion of individuals in each health state over 24 cycles. Initially, all individuals start in the Healthy (H) state, but over time, an increasing proportion transitions into the Sick (S) state. The Sick state proportion rises gradually before stabilizing. Meanwhile, the proportion of deceased individuals (D) grows very slowly, indicating a gradual accumulation of low mortality events.
 
 # 08 Cost-effectiveness analysis (CEA)
 
@@ -500,11 +500,11 @@ table_cea
 
 ```
 
--   **Strategy AB costs more (\$69 higher) but does not provide additional health benefits (same QALYs as SoC).**
+-   Strategy AB costs more (\$69 higher) but hardly provides any additional health benefits (same QALYs as SoC - see next plot for exact numbers).
 
--   The **ICER of \$15,812 per QALY** is irrelevant here since the incremental QALYs are zero.
+-   The ICER of \$15,812 per QALY is irrelevant here since the incremental QALYs are zero.
 
--   Since **Strategy AB does not improve health outcomes but increases costs**, it is considered **weakly dominated**—meaning it is not a cost-effective alternative to the Standard of Care.
+-   Since Strategy AB does not improve health outcomes but increases costs, it is considered weakly dominated-meaning it is not a cost-effective alternative to the Standard of Care.
 
 ```{r}
 ## CEA frontier 
@@ -521,11 +521,11 @@ plot(df_cea, label = "all", txtsize = 14) +
   theme(legend.position = c(0.8, 0.3))
 ```
 
--   **Strategy AB is more expensive but provides almost no additional benefit** (QALYs are nearly the same as SoC).
+-   Strategy AB is more expensive but provides almost no additional benefit (QALYs are nearly the same as SoC).
 
--   **If the willingness-to-pay threshold is low, Strategy AB is not worth adopting**, as the cost increase outweighs the marginal benefit.
+-   If the willingness-to-pay threshold is low, Strategy AB is not worth adopting, as the cost increase outweighs the marginal benefit.
 
--   **SoC remains a reasonable choice given its lower cost with almost identical effectiveness.**
+-   SoC remains a reasonable choice given its lower cost with almost identical effectiveness.
 
 # 09 Deterministic Sensitivity Analysis
 
@@ -539,9 +539,25 @@ source('functions/Functions_StreptoHTA.R')
 
 ```{r}
 l_params_all <- list(
+  
+  cycle_length    = 1/12,                             # cycle length equal to one year (use 1/12 for monthly)
+  n_cycles        = 24,                            # number of cycles
+
+  v_names_states  = c("H", "S", "D"),  # state names
+
+  n_i             = 10000 ,                        # number of individuals
+  
+  ### Strategies 
+  v_names_str     = c("Standard of Care",         # store the strategy names
+                     "Diagnosis AB")  ,
+  
   # Transition probabilities
   # probability of dying
   p_HS         = 1 - (1 - 0.1)^(1/12),     # probability of becoming sick when healthy
+  
+  p_HS_child = 1 - (1 - 0.4)^(1/12),  # probability healthy -> dead when female
+  p_HS_adult   = 1 - (1 - 0.1)^(1/12),  # probability healthy -> dead when male
+  
   p_SH_SoC         = 1 - (1 - 0.88)^(1/12),      # probability of recovering to healthy when sick and diagnosed through SoC
   p_SH_diagAB          = 1 - (1 - 0.93)^(1/12),  # probability of recovering to healthy when sick and diagnosed through AB
 
@@ -562,136 +578,107 @@ l_params_all <- list(
 
   # Discount rates
   d_e       = 0.03,  # discount rate per cycle equal discount of costs and QALYs by 3%
-  d_c       = 0.03,  # discount rate per cycle equal discount of costs and QALYs by 3%
-  # Time horizon
-  n_cycles  = 24,     # simulation time horizon (number of cycles)
-  cycle_length   = 1/12,
-  
-  wtp = 5000
+  d_c       = 0.03  # discount rate per cycle equal discount of costs and QALYs by 3%
 )
 ```
 
-**Test model functions**
-
-Two functions were defined in the 'Functions_StreptoHTA`.R'` file. The first was the `decision_model()` function which takes in model parameters and outputs the Microsiulation results. The second is the `calculate_ce_out()` function which calls `decision_model()` and uses the resulting Micro-simulation results to compute the total costs, QALYs, returning a data frame of costs and QALYs.
+## 09.2 Run the function with the list of parameters
 
 ```{r}
-# Try the calculate_ce_out() function
 df_ce <- calculate_ce_out(l_params_all)
-df_ce
 
-# Get strategies names (will be used to label plots)
-v_names_str <- df_ce$Strategy
-n_str <- length(v_names_str)
+
+# use dampack to calculate the ICER
+calculate_icers(cost       = df_ce$Cost,
+                effect     = df_ce$Effect,
+                strategies = df_ce$Strategy)
 ```
 
--   Strategy AB is not cost-effective compared to Standard of Care.
+-   Cost-Effectiveness: If the willingness-to-pay (WTP) threshold is above \$1164 per QALY, then Diagnosis AB may be considered cost-effective.
 
--   The very small QALY gain does not justify the additional cost based on the calculated ICER.
+-   Decision Making: If the WTP threshold is lower than \$1164 per QALY, Standard of Care remains the preferred choice.
 
--   If decision-makers prioritize cost savings, they should stick with Standard of Care rather than adopting Strategy AB.
+## 9.3 One-way sensitivity analysis (OWSA)
 
-## 9.2 One-way sensitivity analysis (OWSA)
-
-### 9.2.1 OWSA cost parameters only
+### 9.3.1 OWSA cost parameters only
 
 ```{r}
 options(scipen = 999) # disabling scientific notation in R
 # dataframe containing all parameters, their base case values, and the min and 
 # max values of the parameters of interest 
 df_params_owsa <- data.frame(pars = c("c_diagAB", "c_S"),
-                             min  = c(20, 30),  # min parameter values
-                             max  = c(100, 1000)  # max parameter values
+                             min  = c(10, 10),  # min parameter values
+                             max  = c(200, 1000)  # max parameter values
                              )
 owsa_nmb  <- run_owsa_det(params_range     = df_params_owsa,    # dataframe with parameters for OWSA
                           params_basecase  = l_params_all,      # list with all parameters
-                          nsamp            = 100,               # number of parameter values
+                          nsamp            = 5,               # number of parameter values
                           FUN              = calculate_ce_out,  # function to compute outputs
                           outcomes         = c("NMB"),          # output to do the OWSA on
-                          strategies       = v_names_str,       # names of the strategies
+                          strategies       = l_params_all$v_names_str,       # names of the strategies
                           n_wtp            = 5000)              # extra argument to pass to FUN
 ```
 
 ```{r}
-plot(owsa_nmb, txtsize = 10, n_x_ticks = 4, 
-     facet_scales = "free") +
-     theme(legend.position = "bottom")
+# Plot OWSA and store it in an object
+gg_owsa <- plot(owsa_nmb, txtsize = 10, n_x_ticks = 4, 
+                facet_scales = "free") +
+           theme(legend.position = "bottom")
+
+# Display the plot
+print(gg_owsa)
+
+# Save the plot as PNG in figs/ directory
+ggsave("figs/owsa_nmb.png", plot = gg_owsa, width = 10, height = 8, dpi = 300)
 ```
 
--   Strategy AB is highly sensitive to diagnostic costs (c_diagAB), meaning that if these costs rise, the strategy could become less cost-effective.
+-   Strategy AB is highly dependent on lower diagnostic costs (c_diagAB). If these costs increase, its cost-effectiveness diminishes.
 
--   Both strategies are negatively affected by increases in treatment costs (c_S), but Strategy AB is more vulnerable.
+<!-- -->
 
--   If c_diagAB or c_S increase significantly, Standard of Care may be the preferred option in cost-effectiveness terms.
+-   Both strategies are negatively impacted by increasing treatment costs (c_S), but Strategy AB is more vulnerable.
 
-### 9.2.2 OWSA demonstrating other values
+-   If either diagnostic or treatment costs rise too much, Standard of Care may become the better cost-effective choice.
 
-A OWSA does not have to be not limited to costs. All types of input parameters can be explored, like utility value
-
-```{r}
-options(scipen = 999) # disabling scientific notation in R
-# dataframe containing all parameters, their base case values, and the min and 
-# max values of the parameters of interest 
-df_params_owsa <- data.frame(pars = c("p_HS", "u_S"),
-                             min  = c(0.001,   0.10),  # min parameter values
-                             max  = c(0.05, 0.95)  # max parameter values
-                             )
-
-# Make a new object, for the rates and utilities we like to explore
-# We call it owsa_nmb_r_u
-owsa_nmb_r_u  <- run_owsa_det(params_range     = df_params_owsa,    # dataframe with parameters for OWSA
-                              params_basecase  = l_params_all,      # list with all parameters
-                              nsamp            = 100,               # number of parameter values
-                              FUN              = calculate_ce_out,  # function to compute outputs
-                              outcomes         = c("NMB"),          # output to do the OWSA on
-                              strategies       = v_names_str,       # names of the strategies
-                              n_wtp            = 5000)              # extra argument to pass to FUN
-```
-
-```{r}
-plot(owsa_nmb_r_u, txtsize = 10, n_x_ticks = 4, 
-     facet_scales = "free") +
-     theme(legend.position = "bottom")
-```
-
--   The probability of getting sick has a strong negative impact on expected outcomes. If it increases, both strategies perform worse, and Strategy AB is more affected.
-
--   The utility of being sick positively impacts outcomes. Higher values improve both strategies, with Standard of Care maintaining a small advantage.
-
--   Standard of Care performs slightly better overall across both sensitivity analyses, suggesting it remains the more cost-effective choice under these parameter variations.
-
--   Thus, unless additional factors justify Strategy AB, the Standard of Care remains the preferred option under these conditions.
-
-## 9.3 Two-way sensitivity analysis (TWSA)
+## 9.4 Two-way sensitivity analysis (TWSA)
 
 ```{r}
 # dataframe containing all parameters, their basecase values, and the min and 
 # max values of the parameters of interest
 df_params_twsa <- data.frame(pars = c("c_diagSoC", "c_diagAB"),
-                             min  = c(10, 50),  # min parameter values
-                             max  = c(50, 100) # max parameter values
+                             min  = c(10, 30),  # min parameter values
+                             max  = c(100, 200) # max parameter values
                              )
 
 twsa_nmb <- run_twsa_det(params_range    = df_params_twsa,    # dataframe with parameters for TWSA
                          params_basecase = l_params_all,      # list with all parameters
-                         nsamp           = 40,                # number of parameter values
+                         nsamp           = 10,                # number of parameter values
                          FUN             = calculate_ce_out,  # function to compute outputs
                          outcomes        = "NMB",             # output to do the TWSA on
-                         strategies      = v_names_str,       # names of the strategies
-                         n_wtp           = 5000)              # extra argument to pass to FUN
+                         strategies      = l_params_all$v_names_str,       # names of the strategies
+                         n_wtp           = 3000)              # extra argument to pass to FUN
 ```
 
-### 9.3.1 Plot TWSA
+### 9.4.1 Plot TWSA
 
 ```{r}
-plot(twsa_nmb)
+# Plot TWSA and store it in an object
+gg_twsa <- plot(twsa_nmb)
+
+# Display the plot
+print(gg_twsa)
+
+# Save the plot as PNG in figs/ directory
+ggsave("figs/twsa_nmb.png", plot = gg_twsa, width = 10, height = 8, dpi = 300)
 ```
 
--   Standard of Care remains the dominant strategy under most cost assumptions.
+-   Diagnosis AB is cost-effective in most cases, except when its diagnostic costs (c_diagAB) are high (above \~100), and Standard of Care diagnosis (c_diagSoC) remains low.
 
--   Strategy AB is only cost-effective when the diagnostic cost for Standard of Care is high, while Strategy AB remains relatively cheap.
+<!-- -->
 
--   If the cost of Standard of Care continues rising beyond the threshold (\~30-35), switching to Strategy AB might become a viable alternative.
+-   If c_diagAB continues rising above 200+, Standard of Care is preferable.
+
+-   To ensure Diagnosis AB remains cost-effective, controlling diagnostic costs is crucial.
 
 # 10 Probabilistic Sensitivity Analysis (PSA)
 
@@ -710,7 +697,7 @@ generate_psa_params(n_sim = 10)
 
 ## Generate PSA dataset 
 # Number of simulations
-n_sim <- 1000
+n_sim <- 100
 
 # Generate PSA input dataset
 df_psa_input <- generate_psa_params(n_sim = n_sim)
@@ -718,7 +705,7 @@ df_psa_input <- generate_psa_params(n_sim = n_sim)
 head(df_psa_input)
 
 ### Histogram of parameters 
-ggplot(melt(df_psa_input, variable.name = "Parameter"), aes(x = value)) +
+gg_hist <- ggplot(melt(df_psa_input, variable.name = "Parameter"), aes(x = value)) +
   facet_wrap(~Parameter, scales = "free") +
   geom_histogram(aes(y = ..density..)) +
   ylab("") +
@@ -727,7 +714,13 @@ ggplot(melt(df_psa_input, variable.name = "Parameter"), aes(x = value)) +
         axis.title.x = element_blank(),
         axis.title.y = element_blank(),
         axis.text.y  = element_blank(),
-        axis.ticks.y = element_blank()) 
+        axis.ticks.y = element_blank())
+
+# Display the plot
+print(gg_hist)
+
+# Save the plot as PNG in figs/ directory
+ggsave("figs/histogram_parameters.png", plot = gg_hist, width = 10, height = 8, dpi = 300)
 ```
 
 -   The PSA accounts for parameter uncertainty by sampling from different distributions.
@@ -740,6 +733,9 @@ ggplot(melt(df_psa_input, variable.name = "Parameter"), aes(x = value)) +
 
 ```{r}
 # Initialize data.frames with PSA output 
+
+n_str       <- length(l_params_all$v_names_str)
+v_names_str <- l_params_all$v_names_str
 # data.frame of costs
 df_c <- as.data.frame(matrix(0, 
                              nrow = n_sim,
@@ -754,18 +750,19 @@ colnames(df_e) <- v_names_str
 # Conduct probabilistic sensitivity analysis
 # Run Markov model on each parameter set of PSA input dataset
 n_time_init_psa_series <- Sys.time()
+
 for (i in 1:n_sim) { # i <- 1
   l_psa_input <- update_param_list(l_params_all, df_psa_input[i,])
   # Outcomes
   l_out_ce_temp  <- calculate_ce_out(l_psa_input)
-  print(l_psa_input$p_HS)
   df_c[i, ]  <- l_out_ce_temp$Cost  
   df_e[i, ]  <- l_out_ce_temp$Effect
   # Display simulation progress
   if (i/(n_sim/100) == round(i/(n_sim/100), 0)) { # display progress every 5%
-    cat('\r', paste(i/n_sim * 100, "% done", sep = " "))
+    cat('\r', paste(i/n_sim * 100, "% PSA for microsim done", sep = " "))
   }
 }
+
 n_time_end_psa_series <- Sys.time()
 n_time_total_psa_series <- n_time_end_psa_series - n_time_init_psa_series
 print(paste0("PSA with ", scales::comma(n_sim), " simulations run in series in ", 
@@ -786,7 +783,7 @@ colnames(l_psa$effectiveness) <- v_names_str
 colnames(l_psa$cost) <- v_names_str
 
 # Vector with willingness-to-pay (WTP) thresholds.
-v_wtp <- seq(0, 5000, by = 100)
+v_wtp <- seq(0, 2000, by = 100)
 ```
 
 ## 10.3.1 Cost-Effectiveness Scatter plot
@@ -794,7 +791,7 @@ v_wtp <- seq(0, 5000, by = 100)
 ```{r}
 ### Cost-Effectiveness Scatter plot 
 txtsize <- 13
-gg_scattter <- plot_psa(l_psa, txtsize = txtsize) +
+gg_scatter <- plot_psa(l_psa, txtsize = txtsize) +
   ggthemes::scale_color_colorblind() +
   ggthemes::scale_fill_colorblind() +
   scale_y_continuous("Cost (Thousand $)", 
@@ -803,10 +800,19 @@ gg_scattter <- plot_psa(l_psa, txtsize = txtsize) +
   xlab("Effectiveness (QALYs)") +
   guides(col = guide_legend(nrow = 2)) +
   theme(legend.position = "bottom")
-gg_scattter
+
+# Display the plot
+print(gg_scatter)
+
+# Save the plot as PNG in figs/ directory
+ggsave("figs/cost_effectiveness_scatter.png", plot = gg_scatter, width = 8, height = 6, dpi = 300)
 ```
 
-This plot suggests a trade-off between cost and effectiveness, where the decision depends on whether the additional cost for the higher-QALY strategy is justified under the willingness-to-pay threshold used in the analysis.
+-   Diagnosis AB is slightly more costly but marginally more effective than Standard of Care.
+
+-   Uncertainty in cost-effectiveness estimates is considerable, with overlap between strategies.
+
+-   Decision-makers should consider WTP thresholds—if small effectiveness gains justify higher costs, Diagnosis AB may be favored. Otherwise, Standard of Care remains a reasonable choice.
 
 ## 10.3.2 Incremental cost-effectiveness ratios (ICERs) with probabilistic output
 
@@ -814,24 +820,46 @@ This plot suggests a trade-off between cost and effectiveness, where the decisio
 ### Incremental cost-effectiveness ratios (ICERs) with probabilistic output 
 # Compute expected costs and effects for each strategy from the PSA
 df_out_ce_psa <- summary(l_psa)
+
+# Compute ICERs
 df_cea_psa <- calculate_icers(cost       = df_out_ce_psa$meanCost, 
                               effect     = df_out_ce_psa$meanEffect,
                               strategies = df_out_ce_psa$Strategy)
-df_cea_psa
+
+# Display the table
+print(df_cea_psa)
+
+# Save the table as a CSV file in the tables/ directory
+write.csv(df_cea_psa, "tables/icer_results.csv", row.names = FALSE)
 ```
+
+-   Diagnosis AB is cost-effective, with an ICER of only \$25.52 per QALY.
+
+-   The small incremental cost (+\$0.46) and minor QALY gain (+0.018) suggest that both strategies are very similar.
+
+-   Decision-makers should consider whether the small QALY gain justifies the slightly higher cost.
+
+-   If the WTP threshold is higher than \$25.52 per QALY, Diagnosis AB is the preferred option.
 
 ## 10.3.3 Plot cost-effectiveness frontier with probabilistic output
 
 ```{r}
-### Plot cost-effectiveness frontier with probabilistic output 
-plot_icers(df_cea_psa, label = "all", txtsize = txtsize) +
-  expand_limits(x = max(table_cea$QALYs) + 0.1) +
+# Plot cost-effectiveness frontier with probabilistic output
+gg_icers <- plot_icers(df_cea_psa, label = "all", txtsize = txtsize) +
+  expand_limits(x = c(22.52, 22.53)) +
   theme(legend.position = c(0.8, 0.3))
+
+# Display the plot
+print(gg_icers)
+
+# Save the plot in figs/ directory as a PNG file
+ggsave("figs/cost_effectiveness_frontier.png", plot = gg_icers, width = 8, height = 6, dpi = 300)
+
 ```
 
--   Strategy AB offers only a small increase in QALYs but at a substantially higher cost.
+-   The plot shows that Diagnosis AB is slightly more effective than Standard of Care in terms of QALYs but comes at a marginally higher cost. Since both strategies lie on the efficient frontier, neither is dominated, meaning both remain viable options depending on the willingness-to-pay (WTP) threshold.
 
--   The decision to adopt Strategy AB depends on whether the additional cost is justifiable based on the healthcare budget and willingness-to-pay threshold.
+-   The x-axis is zoomed into to enhance visibility of the small differences in QALYs
 
 ## 10.3.4 Cost-effectiveness acceptability curves (CEACs) and frontier (CEAF)
 
@@ -847,8 +875,19 @@ gg_ceac <- plot_ceac(ceac_obj, txtsize = txtsize, xlim = c(0, NA), n_x_ticks = 1
   ggthemes::scale_color_colorblind() +
   ggthemes::scale_fill_colorblind() +
   theme(legend.position = c(0.8, 0.48))
-gg_ceac
+
+# Display the plot
+print(gg_ceac)
+
+# Save the plot in figs/ directory as a PNG file
+ggsave("figs/ceac_plot.png", plot = gg_ceac, width = 8, height = 6, dpi = 300)
 ```
+
+-   If the WTP is below \$100 per QALY, Standard of Care is more likely to be the cost-effective choice.
+
+-   If WTP is above \$100 per QALY, DiagnosisAB becomes the dominant strategy in terms of cost-effectiveness.
+
+-   Decision-makers with a higher budget for health interventions should prioritize Diagnosis AB, as it offers better value for money at most WTP levels.
 
 # Acknowlegdement
 
